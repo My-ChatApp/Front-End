@@ -11,8 +11,28 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
+      '/api/auth': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
+      '/api/conversations': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+      },
+      '/api/chat': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+      },
+      '/api/user-profiles': {
+        target: 'http://localhost:8083',
+        changeOrigin: true,
+      },
+      '/api/notifications': { 
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+      },
+      '/api/friends': {
+        target: 'http://localhost:8085',
         changeOrigin: true,
       }
     }

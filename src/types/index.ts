@@ -46,3 +46,55 @@ export interface ErrorResponse {
   message: string;
   path: string;
 }
+
+export type ConversationType = 'PRIVATE' | 'GROUP';
+export type MemberRole = 'OWNER' | 'MEMBER';
+export type FriendRequestStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
+export interface CreateConversationRequest {
+  title: string;
+  type: ConversationType;
+  memberIds: string[];
+}
+
+export interface ConversationMember {
+  userId: string;
+  role: MemberRole;
+  nickname?: string;
+}
+
+export interface Conversation {
+  id: string;
+  type: ConversationType;
+  title: string;
+  avatarUrl?: string;
+  createdBy?: string;
+  createdAt?: string;
+  members?: ConversationMember[];
+}
+
+export interface SendFriendRequestRequest {
+  senderId: string;
+  receiverId: string;
+}
+
+export interface FriendRequest {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  status: FriendRequestStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  body: string;
+  referenceId?: string;
+  read: boolean;
+  isRead?: boolean;
+  createdAt?: string;
+}
