@@ -1,4 +1,10 @@
-import type { MessageAttachment, MessageType, NotificationItem, NotificationType } from '@/types';
+import type {
+  ConversationMember,
+  MessageAttachment,
+  MessageType,
+  NotificationItem,
+  NotificationType,
+} from '@/types';
 
 export function formatMessageTime(iso?: string): string {
   if (!iso) return '';
@@ -369,7 +375,7 @@ function normalizeUserIdForCompare(id?: string | null): string {
 export function mergeConversationFromInbox(
   existing: {
     unreadCount?: number;
-    members?: { userId?: string; id?: { userId?: string }; unreadCount?: number }[];
+    members?: ConversationMember[];
     lastMessagePreview?: string;
     lastMessageType?: MessageType;
     lastMessageSenderId?: string;
@@ -377,15 +383,22 @@ export function mergeConversationFromInbox(
   },
   incoming: {
     unreadCount?: number;
-    members?: { userId?: string; id?: { userId?: string }; unreadCount?: number }[];
+    members?: Array<Partial<ConversationMember>>;
     lastMessagePreview?: string;
     lastMessageType?: MessageType | string;
     lastMessageSenderId?: string;
     lastMessageAt?: string;
   },
   currentUserId: string
-): typeof existing {
-  const mergedMembers = incoming.members?.length
+): {
+  unreadCount?: number;
+  members?: ConversationMember[];
+  lastMessagePreview?: string;
+  lastMessageType?: MessageType;
+  lastMessageSenderId?: string;
+  lastMessageAt?: string;
+} {
+  const mergedMembers: ConversationMember[] | undefined = incoming.members?.length
     ? incoming.members.map((m) => {
         const userId = m.userId ?? m.id?.userId;
         const prev = existing.members?.find(
@@ -393,7 +406,12 @@ export function mergeConversationFromInbox(
             normalizeUserIdForCompare(pm.userId ?? pm.id?.userId) ===
             normalizeUserIdForCompare(userId)
         );
-        return { ...prev, ...m, userId: userId ?? prev?.userId };
+        return {
+          ...prev,
+          ...m,
+          role: m.role ?? prev?.role ?? 'MEMBER',
+          userId: userId ?? prev?.userId,
+        };
       })
     : existing.members;
 
