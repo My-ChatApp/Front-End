@@ -70,12 +70,16 @@ npm install
 
 ### Environment Setup
 
-Create a `.env.local` file based on `.env.example`:
+Dev server dùng **Vite proxy** trỏ thẳng tới microservices (xem `vite.config.ts`):
 
-```env
-VITE_API_URL=http://localhost:8080
-VITE_API_BASE_PATH=/api/v1
-```
+| Path | Service |
+|------|---------|
+| `/api/v1/auth` | auth-service :8081 |
+| `/api/conversations`, `/ws` | chat-service :8082 |
+| `/api/v1/user-profiles`, `/api/friends` | user-service :8083 |
+| `/api/notifications` | notification-service :8084 |
+
+Sau đăng nhập, **User ID** lấy từ claim `userId` trong JWT (UUID PostgreSQL).
 
 ### Running the Development Server
 

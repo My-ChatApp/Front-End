@@ -1,51 +1,41 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-
-const resolvePath = (relativePath: string) =>
-  new URL(relativePath, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
+import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // sockjs-client (STOMP/SockJS) expects Node's `global` in the browser bundle
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['sockjs-client', '@stomp/stompjs'],
+  },
   server: {
     port: 3000,
     proxy: {
-      '/api/auth': {
-        target: 'http://localhost:8081',
+      '/api': {
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
-      '/api/conversations': {
-        target: 'http://localhost:8082',
+      '/ws': {
+        target: 'http://localhost:8080',
+        ws: true,
         changeOrigin: true,
       },
-      '/api/chat': {
-        target: 'http://localhost:8082',
-        changeOrigin: true,
-      },
-      '/api/user-profiles': {
-        target: 'http://localhost:8083',
-        changeOrigin: true,
-      },
-      '/api/notifications': { 
-        target: 'http://localhost:8084',
-        changeOrigin: true,
-      },
-      '/api/friends': {
-        target: 'http://localhost:8085',
-        changeOrigin: true,
-      }
-    }
+    },
   },
   resolve: {
     alias: {
-      '@': resolvePath('./src'),
-      '@components': resolvePath('./src/components'),
-      '@pages': resolvePath('./src/pages'),
-      '@services': resolvePath('./src/services'),
-      '@context': resolvePath('./src/context'),
-      '@types': resolvePath('./src/types'),
-      '@utils': resolvePath('./src/utils'),
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
+      '@pages': fileURLToPath(new URL('./src/pages', import.meta.url)),
+      '@services': fileURLToPath(new URL('./src/services', import.meta.url)),
+      '@context': fileURLToPath(new URL('./src/context', import.meta.url)),
+      '@types': fileURLToPath(new URL('./src/types', import.meta.url)),
+      '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
     },
   },
 })

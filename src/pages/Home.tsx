@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/context';
 import { 
   MessageCircle, 
   MessageSquare, 
@@ -19,6 +20,8 @@ import {
 } from 'lucide-react';
 
 export const Home = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-green-200">
       {/* Header */}
@@ -73,8 +76,11 @@ export const Home = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                <Link to="/register" className="w-full sm:w-auto px-8 py-4 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all hover:shadow-xl hover:-translate-y-1">
-                  Trò chuyện ngay
+                <Link
+                  to={isAuthenticated ? '/chat' : '/register'}
+                  className="w-full sm:w-auto px-8 py-4 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all hover:shadow-xl hover:-translate-y-1"
+                >
+                  {isAuthenticated ? 'Vào trò chuyện' : 'Trò chuyện ngay'}
                   <ChevronRight className="w-5 h-5" />
                 </Link>
                 <a href="#features" className="w-full sm:w-auto px-8 py-4 rounded-full bg-white text-slate-700 font-semibold flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50 transition-all hover:shadow-sm">

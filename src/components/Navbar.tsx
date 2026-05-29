@@ -26,6 +26,18 @@ export const Navbar = () => {
         <div className="flex items-center gap-4 md:gap-6">
           {isAuthenticated ? (
             <>
+              <Link
+                to="/chat"
+                className="text-sm font-semibold text-slate-600 hover:text-green-600 transition-colors"
+              >
+                Chat
+              </Link>
+              <Link
+                to="/dashboard"
+                className="hidden sm:inline text-sm font-semibold text-slate-500 hover:text-green-600 transition-colors"
+              >
+                Dashboard
+              </Link>
               <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100/50 rounded-full border border-slate-200 text-sm font-medium text-slate-700">
                 <User className="w-4 h-4 text-green-600" />
                 <span>{user?.email}</span>

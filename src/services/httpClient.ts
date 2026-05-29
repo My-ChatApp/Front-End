@@ -17,6 +17,7 @@ export const clearStoredToken = () => {
 export const createHttpClient = (baseURL: string): AxiosInstance => {
   const client = axios.create({
     baseURL,
+    timeout: 15000,
     headers: {
       'Content-Type': 'application/json',
     },

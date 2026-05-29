@@ -1,7 +1,8 @@
+import { apiUrl } from '@/config/env';
 import { createHttpClient, setStoredToken, clearStoredToken, getStoredToken } from './httpClient';
 import { LoginRequest, RegisterRequest, LoginResponse, ApiResponse, AuthResponse } from '@/types';
 
-const authClient = createHttpClient('/api/auth');
+const authClient = createHttpClient(apiUrl('/api/auth'));
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
@@ -12,8 +13,8 @@ export const authService = {
     return response.data.data;
   },
 
-  register: async (data: RegisterRequest): Promise<void> => {
-    await authClient.post<ApiResponse>(
+  register: async (data: RegisterRequest): Promise<LoginResponse> => {
+    const response = await authClient.post<ApiResponse<LoginResponse>>(
       '/signup',
       {
         email: data.email,
@@ -21,6 +22,7 @@ export const authService = {
         password: data.password,
       }
     );
+    return response.data.data;
   },
 
   validateToken: async (token: string): Promise<AuthResponse> => {

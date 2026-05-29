@@ -1,20 +1,60 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context';
-import { Alert, LoadingSpinner } from '@/components';
+import { Alert, FieldError, LoadingSpinner } from '@/components';
+import { FieldErrors, inputErrorClass, validateRegisterForm } from '@/utils/validation';
 import { UserPlus, User, Mail, Lock } from 'lucide-react';
 
+const inputBaseClass =
+  'w-full pl-11 pr-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-green-500 outline-none transition-all';
+const inputBaseClassPlain =
+  'w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-green-500 outline-none transition-all';
+
 export const Register = () => {
-  const [formData, setFormData] = useState({ email: '', username: '', password: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({
+    email: '',
+    username: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [fieldErrors, setFieldErrors] = useState<
+    FieldErrors<'email' | 'username' | 'password' | 'confirmPassword'>
+  >({});
+  const [localError, setLocalError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { register, isLoading, error, clearError } = useAuth();
 
+  const displayError = localError || error;
+
+  const updateField = <K extends keyof typeof formData>(key: K, value: string) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    if (fieldErrors[key]) {
+      setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+    }
+    setLocalError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) return; 
+    clearError();
+    setLocalError(null);
+
+    const result = validateRegisterForm(formData);
+    if (!result.valid) {
+      setFieldErrors(result.fields);
+      setLocalError(result.message);
+      return;
+    }
+
+    setFieldErrors({});
     try {
-      await register(formData);
-      navigate('/login?registered=true');
+      await register({
+        email: formData.email.trim(),
+        username: formData.username.trim(),
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+      });
+      navigate('/chat');
     } catch (err) {}
   };
 
@@ -22,7 +62,7 @@ export const Register = () => {
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 py-12">
       <div className="w-full max-w-lg relative group">
         <div className="absolute -inset-1 bg-gradient-to-r from-teal-600 to-green-600 rounded-[2rem] blur opacity-20 transition duration-1000"></div>
-        
+
         <div className="relative bg-white/80 backdrop-blur-2xl border border-white/50 p-10 rounded-[2rem] shadow-2xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
@@ -31,7 +71,19 @@ export const Register = () => {
             <p className="text-slate-500 mt-2">Gia nhập cộng đồng Chat App ngay</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {displayError && (
+            <Alert
+              type="error"
+              message={displayError}
+              onClose={() => {
+                setLocalError(null);
+                clearError();
+              }}
+              className="mb-6"
+            />
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 ml-1">Tên người dùng</label>
@@ -39,12 +91,14 @@ export const Register = () => {
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <input
                     type="text"
-                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-green-500 outline-none transition-all"
+                    className={inputErrorClass(!!fieldErrors.username, inputBaseClass)}
                     placeholder="john_doe"
-                    onChange={e => setFormData({...formData, username: e.target.value})}
-                    required
+                    value={formData.username}
+                    onChange={(e) => updateField('username', e.target.value)}
+                    autoComplete="username"
                   />
                 </div>
+                <FieldError message={fieldErrors.username} />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 ml-1">Email</label>
@@ -52,12 +106,14 @@ export const Register = () => {
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <input
                     type="email"
-                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-green-500 outline-none transition-all"
+                    className={inputErrorClass(!!fieldErrors.email, inputBaseClass)}
                     placeholder="vidu@mail.com"
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    required
+                    value={formData.email}
+                    onChange={(e) => updateField('email', e.target.value)}
+                    autoComplete="email"
                   />
                 </div>
+                <FieldError message={fieldErrors.email} />
               </div>
             </div>
 
@@ -67,23 +123,27 @@ export const Register = () => {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="password"
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-green-500 outline-none transition-all"
+                  className={inputErrorClass(!!fieldErrors.password, inputBaseClass)}
                   placeholder="••••••••"
-                  onChange={e => setFormData({...formData, password: e.target.value})}
-                  required
+                  value={formData.password}
+                  onChange={(e) => updateField('password', e.target.value)}
+                  autoComplete="new-password"
                 />
               </div>
+              <FieldError message={fieldErrors.password} />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700 ml-1">Xác nhận mật khẩu</label>
               <input
                 type="password"
-                className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-green-500 outline-none transition-all"
+                className={inputErrorClass(!!fieldErrors.confirmPassword, inputBaseClassPlain)}
                 placeholder="••••••••"
-                onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
-                required
+                value={formData.confirmPassword}
+                onChange={(e) => updateField('confirmPassword', e.target.value)}
+                autoComplete="new-password"
               />
+              <FieldError message={fieldErrors.confirmPassword} />
             </div>
 
             <button
@@ -103,5 +163,3 @@ export const Register = () => {
     </div>
   );
 };
-
-

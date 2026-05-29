@@ -1,30 +1,48 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context';
-import { Alert, LoadingSpinner } from '@/components';
+import { Alert, FieldError, LoadingSpinner } from '@/components';
+import { FieldErrors, inputErrorClass, validateLoginForm } from '@/utils/validation';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
+
+const inputBaseClass =
+  'w-full px-5 py-3.5 rounded-2xl bg-white border border-slate-200 outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-sm';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<'email' | 'password'>>({});
+  const [localError, setLocalError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { login, isLoading, error, clearError } = useAuth();
 
+  const displayError = localError || error;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearError();
+    setLocalError(null);
+
+    const result = validateLoginForm(email, password);
+    if (!result.valid) {
+      setFieldErrors(result.fields);
+      setLocalError(result.message);
+      return;
+    }
+
+    setFieldErrors({});
     try {
-      await login({ email, password });
-      navigate('/dashboard');
+      await login({ email: email.trim(), password });
+      navigate('/chat');
     } catch (err) {}
   };
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4">
       <div className="w-full max-w-md relative group">
-        {/* Glow effect đằng sau card */}
         <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-teal-600 rounded-[2rem] blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
-        
+
         <div className="relative bg-white/80 backdrop-blur-2xl border border-white/50 p-10 rounded-[2rem] shadow-2xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
@@ -33,19 +51,36 @@ export const Login = () => {
             <p className="text-slate-500 mt-2">Đăng nhập để tiếp tục trò chuyện</p>
           </div>
 
-          {error && <Alert type="error" message={error} onClose={clearError} className="mb-6" />}
+          {displayError && (
+            <Alert
+              type="error"
+              message={displayError}
+              onClose={() => {
+                setLocalError(null);
+                clearError();
+              }}
+              className="mb-6"
+            />
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2 ml-1">Email</label>
               <input
                 type="email"
-                className="w-full px-5 py-3.5 rounded-2xl bg-white border border-slate-200 outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-sm"
+                className={inputErrorClass(!!fieldErrors.email, inputBaseClass)}
                 placeholder="email@vidu.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) {
+                    setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                  }
+                  setLocalError(null);
+                }}
+                autoComplete="email"
               />
+              <FieldError message={fieldErrors.email} />
             </div>
 
             <div>
@@ -53,11 +88,17 @@ export const Login = () => {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className="w-full px-5 py-3.5 rounded-2xl bg-white border border-slate-200 outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all shadow-sm"
+                  className={inputErrorClass(!!fieldErrors.password, inputBaseClass)}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (fieldErrors.password) {
+                      setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                    }
+                    setLocalError(null);
+                  }}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -67,6 +108,7 @@ export const Login = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+              <FieldError message={fieldErrors.password} />
             </div>
 
             <button
@@ -89,5 +131,3 @@ export const Login = () => {
     </div>
   );
 };
-
-

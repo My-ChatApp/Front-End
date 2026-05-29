@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./discord-chat.css";
 
 /* * {
   margin: 0;
