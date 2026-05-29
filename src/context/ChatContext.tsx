@@ -162,6 +162,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           updated = {
             ...mergeConversationFromInbox(base, incoming, userId),
             id: convId,
+            type: incoming.type,
           };
         } else if (idx < 0) {
           return prev;

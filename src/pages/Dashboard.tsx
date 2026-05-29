@@ -116,11 +116,16 @@ export const Dashboard = () => {
     }
 
     const unsubscribe = chatSocket.subscribeConversation(activeConversationId, (incoming) => {
+      const message = 'messageId' in incoming ? incoming : incoming.message;
+      if (!message) {
+        return;
+      }
+
       setMessages((prev) => {
-        if (prev.some((m) => m.messageId === incoming.messageId)) {
+        if (prev.some((m) => m.messageId === message.messageId)) {
           return prev;
         }
-        return [...prev, incoming].sort(
+        return [...prev, message].sort(
           (a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')
         );
       });
@@ -200,9 +205,13 @@ export const Dashboard = () => {
       setErrorMessage('Chọn hoặc nhập Conversation ID');
       return;
     }
+    if (!currentUserId) {
+      setErrorMessage('Chưa có userId trong JWT — đăng nhập lại');
+      return;
+    }
     await withSubmit(async () => {
-      const response = await chatService.getMessages(activeConversationId);
-      setMessages(response.data || []);
+      const response = await chatService.getMessages(activeConversationId, currentUserId);
+      setMessages(response.data?.messages || []);
       setStatusMessage('Đã tải lịch sử tin (DynamoDB)');
     });
   };

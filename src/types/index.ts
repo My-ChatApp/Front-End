@@ -108,6 +108,7 @@ export interface Conversation {
   lastMessageType?: MessageType;
   lastMessageAt?: string;
   lastMessagePreview?: string;
+  unreadCount?: number;
   createdAt?: string;
   updatedAt?: string;
   members?: ConversationMember[];
