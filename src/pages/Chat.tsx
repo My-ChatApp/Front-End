@@ -59,49 +59,60 @@ export const Chat = () => {
 
   return (
     <div data-theme={theme} className="chat-app fixed inset-0 flex flex-col overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 left-1/4 h-80 w-80 rounded-full bg-green-300/20 blur-[120px]" />
+        <div className="absolute -bottom-36 right-1/4 h-96 w-96 rounded-full bg-teal-300/20 blur-[120px]" />
+      </div>
+
       {error && (
-        <div className="absolute top-14 right-2 left-2 z-[200] flex items-center justify-between gap-2 rounded-lg bg-[var(--discord-danger)] px-3 py-2 text-sm text-white">
+        <div className="absolute left-4 right-4 top-4 z-[200] flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-white/92 px-4 py-3 text-sm text-red-700 shadow-xl backdrop-blur-md">
           <span className="truncate">{error}</span>
-          <button type="button" onClick={clearError} className="shrink-0 underline">
+          <button
+            type="button"
+            onClick={clearError}
+            className="shrink-0 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+          >
             Đóng
           </button>
         </div>
       )}
 
-      <ChatNavHeader onNavChange={handleNavChange} />
-      <CreateGroupModal />
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+        <ChatNavHeader onNavChange={handleNavChange} />
+        <CreateGroupModal />
 
-      <div className="flex h-full min-h-0 flex-1">
-        {isMobile ? (
-          <>
-            {showMobileSidebar && (
-              <div className="flex h-full w-full flex-col discord-sidebar">
-                <ChatSidebar />
-              </div>
-            )}
-            {showMobileChat && (
-              <div className="flex h-full w-full min-w-0 flex-col">
-                <MobileChatHeader onBack={() => setMobileView('list')} />
-                <ChatPanel />
-              </div>
-            )}
-            {showMobileNavPanel && (
-              <div className="flex h-full w-full min-w-0 flex-col">
-                <MobileNavBackHeader
-                  onBack={() => {
-                    setActiveNavView('chat');
-                    setMobileView('list');
-                  }}
-                />
-                <ChatPanel />
-              </div>
-            )}
-          </>
-        ) : (
-          <ChatLayout sidebar={<ChatSidebar />}>
-            <ChatPanel />
-          </ChatLayout>
-        )}
+        <div className="flex h-full min-h-0 flex-1">
+          {isMobile ? (
+            <>
+              {showMobileSidebar && (
+                <div className="flex h-full w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-white/72 shadow-[0_24px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                  <ChatSidebar />
+                </div>
+              )}
+              {showMobileChat && (
+                <div className="flex h-full w-full min-w-0 flex-col overflow-hidden rounded-t-[1.75rem] bg-white/72 shadow-[0_24px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                  <MobileChatHeader onBack={() => setMobileView('list')} />
+                  <ChatPanel />
+                </div>
+              )}
+              {showMobileNavPanel && (
+                <div className="flex h-full w-full min-w-0 flex-col overflow-hidden rounded-t-[1.75rem] bg-white/72 shadow-[0_24px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                  <MobileNavBackHeader
+                    onBack={() => {
+                      setActiveNavView('chat');
+                      setMobileView('list');
+                    }}
+                  />
+                  <ChatPanel />
+                </div>
+              )}
+            </>
+          ) : (
+            <ChatLayout sidebar={<ChatSidebar />}>
+              <ChatPanel />
+            </ChatLayout>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -109,7 +120,7 @@ export const Chat = () => {
 
 function MobileChatHeader({ onBack }: { onBack: () => void }) {
   return (
-    <div className="flex h-10 shrink-0 items-center border-b border-[var(--discord-border)] px-2 md:hidden">
+    <div className="flex h-12 shrink-0 items-center border-b border-[var(--discord-border)] bg-white/65 px-3 backdrop-blur-md md:hidden">
       <button
         type="button"
         onClick={onBack}
@@ -117,14 +128,14 @@ function MobileChatHeader({ onBack }: { onBack: () => void }) {
       >
         <ArrowLeft className="size-5" />
       </button>
-      <span className="text-sm text-[var(--discord-text-muted)]">Quay lại</span>
+      <span className="text-sm font-medium text-slate-600">Quay lại</span>
     </div>
   );
 }
 
 function MobileNavBackHeader({ onBack }: { onBack: () => void }) {
   return (
-    <div className="flex h-10 shrink-0 items-center border-b border-[var(--discord-border)] px-2 md:hidden">
+    <div className="flex h-12 shrink-0 items-center border-b border-[var(--discord-border)] bg-white/65 px-3 backdrop-blur-md md:hidden">
       <button
         type="button"
         onClick={onBack}
@@ -132,7 +143,7 @@ function MobileNavBackHeader({ onBack }: { onBack: () => void }) {
       >
         <ArrowLeft className="size-5" />
       </button>
-      <span className="text-sm text-[var(--discord-text-muted)]">Quay lại tin nhắn</span>
+      <span className="text-sm font-medium text-slate-600">Quay lại tin nhắn</span>
     </div>
   );
 }

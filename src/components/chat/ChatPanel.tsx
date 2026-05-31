@@ -61,24 +61,26 @@ export const ChatPanel = () => {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col discord-chat-area">
-      <ChatHeader
-        detailOpen={detailOpen}
-        onToggleDetail={() => setDetailOpen((v) => !v)}
-      />
-      <MessageList />
-      {showTypingInChat && (
-        <div
-          className="shrink-0 border-t border-[var(--discord-border)] px-4 py-1.5"
-          role="status"
-          aria-live="polite"
-        >
-          <p className="text-xs italic text-[var(--discord-text-muted)]">
-            {peerName ? `${peerName} đang nhập...` : 'đang nhập...'}
-          </p>
-        </div>
-      )}
-      <MessageInput />
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[var(--discord-chat)] md:flex-row">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <ChatHeader
+          detailOpen={detailOpen}
+          onToggleDetail={() => setDetailOpen((v) => !v)}
+        />
+        <MessageList />
+        {showTypingInChat && (
+          <div
+            className="shrink-0 border-t border-[var(--discord-border)] bg-[var(--discord-panel)] px-4 py-2 backdrop-blur-md"
+            role="status"
+            aria-live="polite"
+          >
+            <p className="text-xs font-medium italic text-[var(--discord-accent)]">
+              {peerName ? `${peerName} đang nhập...` : 'đang nhập...'}
+            </p>
+          </div>
+        )}
+        <MessageInput />
+      </div>
       <ConversationDetailDrawer
         open={detailOpen}
         onClose={() => setDetailOpen(false)}

@@ -24,8 +24,8 @@ export const ConversationRenameModal = ({
   if (!open) return null;
 
   return (
-    <div
-      className="discord-modal-scrim fixed inset-0 z-[220] flex items-center justify-center p-4"
+      <div
+        className="discord-modal-scrim fixed inset-0 z-220 flex items-center justify-center p-4"
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget && !saving) onClose();
@@ -38,9 +38,10 @@ export const ConversationRenameModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-semibold text-[var(--discord-text)]">Đổi tên đoạn chat</h3>
+            <h3 className="font-semibold text-(--discord-text)">Đổi tên đoạn chat</h3>
           <button
             type="button"
+            title="Đóng"
             className="discord-icon-button flex size-8 items-center justify-center rounded-full"
             onClick={onClose}
             disabled={saving}
@@ -49,7 +50,7 @@ export const ConversationRenameModal = ({
           </button>
         </div>
         <input
-          className="discord-input-reset w-full rounded-lg border border-[var(--discord-border)] bg-black/15 px-3 py-2 text-sm"
+            className="discord-input-reset w-full rounded-xl border border-(--discord-border) bg-white px-3 py-2.5 text-sm outline-none focus:border-(--discord-accent) focus:ring-4 focus:ring-green-500/10"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           disabled={saving}

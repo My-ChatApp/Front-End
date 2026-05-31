@@ -2,7 +2,7 @@ export const THEMES = ['light', 'dark', 'cupcake', 'retro', 'valentine', 'nord']
 
 export type ThemeId = (typeof THEMES)[number];
 
-export const DEFAULT_THEME: ThemeId = 'dark';
+export const DEFAULT_THEME: ThemeId = 'light';
 
 export const THEME_OPTIONS: {
   id: ThemeId;
@@ -22,12 +22,12 @@ export const THEME_OPTIONS: {
   {
     id: 'cupcake',
     label: 'Cupcake',
-    description: 'Pastel nhẹ, tông ấm',
+    description: 'Pastel nhẹ, tươi mới',
   },
   {
     id: 'retro',
     label: 'Retro',
-    description: 'Cổ điển, xanh lá nhẹ',
+    description: 'Cổ điển, cam nâu nhẹ',
   },
   {
     id: 'valentine',

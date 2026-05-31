@@ -24,19 +24,19 @@ function ResultRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full flex-col gap-0.5 rounded-lg px-2 py-2 text-left transition hover:bg-[var(--discord-hover)]"
+      className="flex w-full flex-col gap-0.5 rounded-xl px-3 py-2.5 text-left transition hover:bg-green-50"
     >
       <span className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium text-[var(--discord-text)]">
+        <span className="truncate text-sm font-medium text-(--discord-text)">
           <SenderName senderId={result.senderId} />
         </span>
         {result.createdAt ? (
-          <span className="shrink-0 text-[11px] text-[var(--discord-text-faint)]">
+          <span className="shrink-0 text-[11px] text-(--discord-text-faint)">
             {formatMessageTime(result.createdAt)}
           </span>
         ) : null}
       </span>
-      <span className="line-clamp-2 text-xs text-[var(--discord-text-muted)]">{snippet}</span>
+      <span className="line-clamp-2 text-xs text-(--discord-text-muted)">{snippet}</span>
     </button>
   );
 }
@@ -103,7 +103,7 @@ export const MessageSearchModal = ({ open, onClose, onJumpComplete }: MessageSea
 
   return (
     <div
-      className="discord-modal-scrim fixed inset-0 z-[230] flex items-start justify-center p-4 pt-16"
+      className="discord-modal-scrim fixed inset-0 z-230 flex items-start justify-center p-4 pt-16"
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -115,8 +115,8 @@ export const MessageSearchModal = ({ open, onClose, onJumpComplete }: MessageSea
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 border-b border-[var(--discord-border)] p-3">
-          <Search className="size-4 shrink-0 text-[var(--discord-text-muted)]" />
+        <div className="flex items-center gap-2 border-b border-(--discord-border) p-3">
+          <Search className="size-4 shrink-0 text-green-600" />
           <input
             ref={inputRef}
             className="discord-input-reset min-w-0 flex-1 text-sm"
@@ -135,16 +135,16 @@ export const MessageSearchModal = ({ open, onClose, onJumpComplete }: MessageSea
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {debouncedQuery.length > 0 && debouncedQuery.length < 2 ? (
-            <p className="px-2 py-3 text-sm text-[var(--discord-text-faint)]">
+            <p className="px-2 py-3 text-sm text-(--discord-text-faint)">
               Nhập ít nhất 2 ký tự.
             </p>
           ) : loading ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-sm text-[var(--discord-text-muted)]">
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-(--discord-text-muted)">
               <Loader2 className="size-4 animate-spin" />
               Đang tìm...
             </div>
           ) : debouncedQuery.length >= 2 && results.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-[var(--discord-text-faint)]">
+            <p className="px-2 py-3 text-sm text-(--discord-text-faint)">
               Không tìm thấy tin nhắn phù hợp.
             </p>
           ) : (
