@@ -58,16 +58,23 @@ export const ChatNavHeader = ({ onNavChange }: ChatNavHeaderProps) => {
   }, [activeNavView]);
 
   return (
-    <header className="discord-nav-header flex h-12 shrink-0 items-center justify-between px-4">
+    <header className="discord-nav-header flex h-16 shrink-0 items-center justify-between gap-4 px-4 md:px-5">
       <button
         type="button"
         onClick={() => handleNav('chat')}
-        className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-[var(--discord-hover)]"
+        className="flex items-center gap-3 rounded-full border border-[var(--discord-border)] bg-[var(--discord-panel)] px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--discord-panel-strong)]"
       >
-        <MessageCircle className="size-5 text-[var(--discord-accent)]" />
-        <span className="text-sm font-bold text-[var(--discord-text)]">MyChatApp</span>
+        <span className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-green-600 to-teal-600 text-white shadow-md shadow-green-500/20">
+          <MessageCircle className="size-4.5" />
+        </span>
+        <span className="flex flex-col items-start leading-tight">
+          <span className="text-sm font-extrabold tracking-tight text-transparent bg-linear-to-r from-green-600 to-teal-600 bg-clip-text">
+            MyChatApp
+          </span>
+          <span className="text-[11px] text-[var(--discord-text-muted)]">Realtime chat workspace</span>
+        </span>
       </button>
-      <nav className="flex items-center gap-1">
+      <nav className="flex items-center gap-2">
         {NAV_ITEMS.map(({ view, label, icon: Icon }) => {
           const isActive = activeNavView === view;
           return (
@@ -75,21 +82,21 @@ export const ChatNavHeader = ({ onNavChange }: ChatNavHeaderProps) => {
               key={view}
               type="button"
               onClick={() => handleNav(view)}
-              className={`relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
                 isActive
-                  ? 'bg-[var(--discord-active)] text-[var(--discord-text)]'
-                  : 'text-[var(--discord-text-muted)] hover:bg-[var(--discord-hover)] hover:text-[var(--discord-text)]'
+                  ? 'bg-[linear-gradient(135deg,rgba(22,163,74,0.16),rgba(15,118,110,0.12))] text-[var(--discord-text)] shadow-sm'
+                  : 'text-[var(--discord-text-muted)] hover:bg-[var(--discord-panel-strong)] hover:text-[var(--discord-text)]'
               }`}
             >
-              <Icon className="size-4" />
+              <Icon className="size-4.5" />
               <span className="hidden sm:inline">{label}</span>
               {view === 'chat' && chatUnreadCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--discord-danger)] text-[9px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow">
                   {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
                 </span>
               )}
               {view === 'notifications' && systemUnreadCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--discord-danger)] text-[9px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow">
                   {systemUnreadCount > 99 ? '99+' : systemUnreadCount}
                 </span>
               )}
