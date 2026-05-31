@@ -17,7 +17,7 @@ export const ThemeSettingsSection = () => {
   const hasPendingChange = previewTheme !== theme;
 
   return (
-    <section className="me-profile-card mb-4 overflow-hidden p-4">
+    <section className="me-profile-card mb-4 overflow-hidden p-4 mt-4">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex size-10 items-center justify-center rounded-2xl bg-[var(--discord-active)] text-[var(--discord-accent)]">
           <Palette className="size-5" />

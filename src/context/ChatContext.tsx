@@ -75,6 +75,7 @@ interface ChatContextValue {
   getMyRoleInSelectedConversation: () => 'OWNER' | 'MEMBER' | null;
   isPeerTyping: boolean;
   notifyTyping: (typing: boolean) => void;
+  dismissBotMessage: (messageId: string) => void;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -292,6 +293,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     },
     [bumpConversationPreview]
   );
+
+  const dismissBotMessage = useCallback((messageId: string) => {
+    setMessages((prev) => prev.filter((msg) => msg.messageId !== messageId));
+  }, []);
 
   const patchMessageIfActive = useCallback((msg: ChatMessage) => {
     if (msg.conversationId !== selectedIdRef.current) return;
@@ -1111,6 +1116,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     getMyRoleInSelectedConversation,
     isPeerTyping,
     notifyTyping,
+    dismissBotMessage,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

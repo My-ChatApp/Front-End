@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { MessageCircle } from 'lucide-react';
 import { useAuth } from '@/context';
 import { useChat } from '@/context/ChatContext';
 import {
@@ -129,7 +130,7 @@ export const MessageList = () => {
 
   if (isLoadingMessages) {
     return (
-      <div className="flex-1 overflow-y-auto px-2 py-4">
+      <div className="flex-1 overflow-y-auto px-3 py-4 md:px-4 md:py-6">
         <MessageSkeleton count={6} />
       </div>
     );
@@ -137,18 +138,24 @@ export const MessageList = () => {
 
   if (messages.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 text-[var(--discord-text-muted)]">
-        <p className="text-sm">
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center text-[var(--discord-text-muted)]">
+        <div className="mb-4 flex size-16 items-center justify-center rounded-3xl bg-gradient-to-br from-green-600 to-teal-600 text-white shadow-lg shadow-green-500/20">
+          <MessageCircle className="size-7" />
+        </div>
+        <p className="text-sm font-medium text-[var(--discord-text)]">
           {isDraftPrivate
             ? 'Chưa có tin nhắn — gửi tin đầu tiên để bắt đầu'
             : 'Chưa có tin nhắn. Hãy gửi lời chào!'}
+        </p>
+        <p className="mt-2 max-w-sm text-xs leading-relaxed text-[var(--discord-text-muted)]">
+          Hãy thử nhắc ai đó bằng @ hoặc chia sẻ một file để mở đầu cuộc trò chuyện.
         </p>
       </div>
     );
   }
 
   return (
-    <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto py-4">
+    <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-1 py-4 md:px-2 md:py-5">
       <div ref={topSentinelRef} className="h-px shrink-0" aria-hidden />
       {isLoadingOlder && (
         <div className="mb-3 px-2">

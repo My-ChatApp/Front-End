@@ -1,7 +1,10 @@
 /* Discord-inspired chat layout (tokens from chat-theme.css via data-theme) */
 .chat-app {
   min-height: 100vh;
-  background: var(--discord-app);
+  background:
+    radial-gradient(circle at top left, rgba(16, 185, 129, 0.13), transparent 32%),
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 28%),
+    linear-gradient(180deg, var(--discord-app) 0%, #f5f8f7 48%, #f7faf9 100%);
   color: var(--discord-text);
   font-family: 'gg sans', 'Noto Sans', Whitney, Inter, system-ui, sans-serif;
 }
@@ -30,7 +33,7 @@
 }
 
 .discord-sidebar {
-  background: var(--discord-sidebar);
+  background: color-mix(in srgb, var(--discord-sidebar) 92%, white 8%);
   border-right: 1px solid var(--discord-border);
 }
 
@@ -39,19 +42,21 @@
 }
 
 .discord-chat-area {
-  background: var(--discord-chat);
+  background: transparent;
 }
 
 .discord-nav-header {
-  background: color-mix(in srgb, var(--discord-panel) 92%, transparent);
+  background: color-mix(in srgb, var(--discord-panel) 88%, transparent);
   border-bottom: 1px solid var(--discord-border);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
 }
 
 .discord-topbar {
-  background: color-mix(in srgb, var(--discord-panel) 92%, transparent);
+  background: color-mix(in srgb, var(--discord-panel) 88%, transparent);
   border-bottom: 1px solid var(--discord-border);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
 }
 
 .discord-list-item {
@@ -75,28 +80,30 @@
 }
 
 .discord-list-item.is-active {
-  background: var(--discord-active);
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.16) 0%, rgba(15, 118, 110, 0.12) 100%);
   color: var(--discord-text);
 }
 
 .discord-icon-button {
-  border: 1px solid transparent;
+  border: 1px solid var(--discord-border);
   border-radius: 999px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.82);
   color: var(--discord-text-muted);
   cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+  transition: background-color 150ms ease, color 150ms ease, transform 150ms ease, border-color 150ms ease;
 }
 
 .discord-icon-button:hover {
-  background: var(--discord-hover);
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.2);
   color: var(--discord-text);
 }
 
 .discord-composer {
-  background: color-mix(in srgb, var(--discord-panel) 90%, transparent);
+  background: rgba(255, 255, 255, 0.88);
   border: 1px solid var(--discord-border);
-  border-radius: 16px;
+  border-radius: 20px;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.06);
 }
 
 .discord-input-reset {
@@ -126,13 +133,14 @@
 
 .discord-modal-scrim {
   background: var(--discord-overlay);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .discord-modal-card {
-  background: var(--discord-panel);
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--discord-border-strong);
-  border-radius: var(--discord-radius);
+  border-radius: 20px;
   box-shadow: var(--discord-shadow);
 }
 
@@ -182,10 +190,6 @@
   animation: chat-skeleton-pulse 1.5s ease-in-out infinite;
   background: var(--discord-hover);
   border-radius: var(--discord-radius-sm);
-}
-
-.me-profile-scroll {
-  scrollbar-gutter: stable;
 }
 
 .me-profile-card {
@@ -303,7 +307,7 @@
 .me-action-btn--danger {
   background: color-mix(in srgb, var(--discord-danger) 12%, transparent);
   color: var(--discord-danger);
-  border: 1px solid color-mix(in srgb, var(--discord-danger) 35%, transparent);
+  border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .me-action-btn--danger:hover:not(:disabled) {
@@ -327,7 +331,6 @@
 @media (min-width: 768px) {
   .conversation-detail-root .discord-modal-scrim {
     background: transparent;
-    backdrop-filter: none;
     pointer-events: none;
   }
 }
@@ -339,7 +342,7 @@ body.conversation-detail-open {
 .message-search-highlight {
   border-radius: var(--discord-radius-sm);
   background: color-mix(in srgb, var(--discord-accent) 28%, transparent);
-  outline: 1px solid color-mix(in srgb, var(--discord-accent) 55%, transparent);
+  outline: 1px solid rgba(22, 163, 74, 0.55);
   animation: message-search-pulse 2.5s ease-out;
 }
 
