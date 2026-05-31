@@ -11,7 +11,7 @@ export const ChatLayout = ({ sidebar, children }: ChatLayoutProps) => {
       <section className="hidden h-full w-[240px] min-w-[240px] flex-col discord-sidebar md:flex">
         {sidebar}
       </section>
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col border-l border-white/10 md:border-l">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col border-l border-[var(--discord-border)] md:border-l">
         {children}
       </div>
     </div>

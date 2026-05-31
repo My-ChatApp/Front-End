@@ -1,7 +1,13 @@
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { wsUrl } from '@/config/env';
-import { ChatInboxEvent, ChatMessage, ChatRealtimeEnvelope, SendMessageRequest } from '@/types';
+import {
+  ChatInboxEvent,
+  ChatMessage,
+  ChatRealtimeEnvelope,
+  SendMessageRequest,
+  TypingEventRequest,
+} from '@/types';
 import { getStoredToken } from './httpClient';
 import { toBackendMessageType } from './chatService';
 
@@ -183,6 +189,14 @@ export const chatSocket = {
         ...payload,
         type: toBackendMessageType(payload.type),
       }),
+    });
+  },
+
+  sendTyping: (payload: TypingEventRequest): void => {
+    if (!stompClient?.connected) return;
+    stompClient.publish({
+      destination: '/app/chat.typing',
+      body: JSON.stringify(payload),
     });
   },
 

@@ -67,7 +67,7 @@ export const CreateGroupModal = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Nhập tên nhóm..."
-              className="w-full rounded-md border border-white/10 bg-[var(--discord-panel-strong)] px-3 py-2 text-sm text-[var(--discord-text)] outline-none focus:border-[var(--discord-accent)]"
+              className="w-full rounded-md border border-[var(--discord-border)] bg-[var(--discord-panel-strong)] px-3 py-2 text-sm text-[var(--discord-text)] outline-none focus:border-[var(--discord-accent)]"
             />
           </div>
 

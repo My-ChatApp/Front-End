@@ -143,7 +143,7 @@ export const FriendsPanel = () => {
         <h1 className="text-sm font-semibold">Bạn bè</h1>
       </header>
 
-      <div className="flex flex-wrap gap-1 border-b border-white/10 px-3 py-2">
+      <div className="flex flex-wrap gap-1 border-b border-[var(--discord-border)] px-3 py-2">
         {(['friends', 'incoming', 'outgoing', 'add'] as Tab[]).map((t) => (
           <button
             key={t}

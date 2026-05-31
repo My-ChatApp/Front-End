@@ -8,6 +8,7 @@ import {
   ChatSidebar,
   CreateGroupModal,
 } from '@/components/chat';
+import { useThemeStore } from '@/store/useThemeStore';
 
 type MobileView = 'list' | 'chat';
 
@@ -20,6 +21,7 @@ export const Chat = () => {
     error,
     setActiveNavView,
   } = useChat();
+  const theme = useThemeStore((s) => s.theme);
   const [mobileView, setMobileView] = useState<MobileView>('list');
   const [isMobile, setIsMobile] = useState(false);
 
@@ -56,7 +58,7 @@ export const Chat = () => {
   };
 
   return (
-    <div className="chat-app fixed inset-0 flex flex-col overflow-hidden">
+    <div data-theme={theme} className="chat-app fixed inset-0 flex flex-col overflow-hidden">
       {error && (
         <div className="absolute top-14 right-2 left-2 z-[200] flex items-center justify-between gap-2 rounded-lg bg-[var(--discord-danger)] px-3 py-2 text-sm text-white">
           <span className="truncate">{error}</span>
@@ -107,7 +109,7 @@ export const Chat = () => {
 
 function MobileChatHeader({ onBack }: { onBack: () => void }) {
   return (
-    <div className="flex h-10 shrink-0 items-center border-b border-white/10 px-2 md:hidden">
+    <div className="flex h-10 shrink-0 items-center border-b border-[var(--discord-border)] px-2 md:hidden">
       <button
         type="button"
         onClick={onBack}
@@ -122,7 +124,7 @@ function MobileChatHeader({ onBack }: { onBack: () => void }) {
 
 function MobileNavBackHeader({ onBack }: { onBack: () => void }) {
   return (
-    <div className="flex h-10 shrink-0 items-center border-b border-white/10 px-2 md:hidden">
+    <div className="flex h-10 shrink-0 items-center border-b border-[var(--discord-border)] px-2 md:hidden">
       <button
         type="button"
         onClick={onBack}

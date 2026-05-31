@@ -59,7 +59,7 @@ export const ChatSidebar = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 border-b border-white/10 p-3">
+      <div className="shrink-0 border-b border-[var(--discord-border)] p-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="truncate text-sm font-bold text-[var(--discord-text)]">Tin nhắn</h2>
           <button
