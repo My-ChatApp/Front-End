@@ -19,6 +19,7 @@ export const MessageInput = () => {
     isSending,
   } = useChat();
   const [text, setText] = useState('');
+  const [showPresets, setShowPresets] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const otherId =
@@ -45,6 +46,26 @@ export const MessageInput = () => {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const presets = [
+    'Tóm tắt đoạn hội thoại',
+    'Soạn trả lời ngắn gọn',
+    'Viết lịch sự, chuyên nghiệp',
+    'Rút gọn nội dung thành 2 câu',
+    'Đổi giọng văn thân thiện',
+  ];
+
+  const onSelectPreset = (preset: string) => {
+    // replace text after @ChatBot with preset
+    const idx = text.search(/@ChatBot\b/i);
+    if (idx === -1) {
+      setText((t) => `${t} @ChatBot ${preset}`);
+    } else {
+      const before = text.slice(0, idx);
+      setText(`${before}@ChatBot ${preset}`);
+    }
+    setShowPresets(false);
   };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,6 +104,24 @@ export const MessageInput = () => {
           disabled={isSending}
           className="discord-input-reset max-h-32 min-h-[24px] flex-1 resize-none py-2 text-[15px]"
         />
+        {/* Suggestions when user types @ChatBot */}
+        {text.match(/@ChatBot\b/i) && (
+          <div className="absolute bottom-14 left-6 z-30 w-[320px] rounded-md border bg-black/60 p-2 text-sm">
+            <div className="mb-1 text-xs text-[var(--discord-text-muted)]">Gợi ý cho @ChatBot:</div>
+            <div className="flex flex-col gap-1">
+              {presets.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => onSelectPreset(p)}
+                  className="text-left text-sm underline"
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button
           type="button"
           onClick={handleSend}

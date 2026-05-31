@@ -34,8 +34,22 @@ export const MessageBubble = ({
       data-message-id={message.messageId}
     >
       <div className={`max-w-[min(85%,520px)] rounded-2xl px-3 py-2 ${bubbleClass}`}>
-        {!isOwn && senderLabel && (
-          <div className="mb-0.5 text-xs font-semibold opacity-80">{senderLabel}</div>
+        {/* Render ChatBot private replies with a copy button */}
+        {message.senderId === '__chatbot__' ? (
+          <div className="mb-0.5 flex items-center justify-between gap-2">
+            <div className="text-xs font-semibold opacity-80">ChatBot (chỉ bạn thấy)</div>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(message.content || '')}
+              className="text-xs underline"
+            >
+              Sao chép
+            </button>
+          </div>
+        ) : (
+          !isOwn && senderLabel && (
+            <div className="mb-0.5 text-xs font-semibold opacity-80">{senderLabel}</div>
+          )
         )}
         <MessageBody message={message} bodyClass={bodyClass} />
         <div className={`mt-1 text-right ${metaClass}`}>{time}</div>
