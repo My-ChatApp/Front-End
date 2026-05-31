@@ -74,6 +74,8 @@ export interface ConversationMember {
   role: MemberRole;
   nickname?: string;
   unreadCount?: number;
+  lastReadMessageId?: string;
+  lastReadAt?: string;
 }
 
 export interface UpdateConversationRequest {
@@ -152,11 +154,27 @@ export interface MessagesPageResponse {
   hasMore: boolean;
 }
 
-export type ChatRealtimeEventType = 'MESSAGE_CREATED' | 'MESSAGE_UPDATED' | 'MESSAGE_DELETED';
+export type ChatRealtimeEventType =
+  | 'MESSAGE_CREATED'
+  | 'MESSAGE_UPDATED'
+  | 'MESSAGE_DELETED'
+  | 'TYPING'
+  | 'READ_RECEIPT';
 
 export interface ChatRealtimeEnvelope {
   eventType?: ChatRealtimeEventType;
   message?: ChatMessage;
+  conversationId?: string;
+  userId?: string;
+  typing?: boolean;
+  lastReadMessageId?: string;
+  lastReadAt?: string;
+}
+
+export interface TypingEventRequest {
+  conversationId: string;
+  userId: string;
+  typing: boolean;
 }
 
 export type ChatInboxEventType =

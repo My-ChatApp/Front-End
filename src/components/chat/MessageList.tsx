@@ -1,6 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/context';
 import { useChat } from '@/context/ChatContext';
+import {
+  getPeerMember,
+  isLatestOwnMessageSeen,
+} from '@/utils/chatUtils';
 import { MessageBubble } from './MessageBubble';
 import { MessageSkeleton } from './skeletons/MessageSkeleton';
 
@@ -16,9 +20,34 @@ export const MessageList = () => {
     selectedConversation,
     highlightMessageId,
     pendingScrollMessageId,
+    detailMembers,
   } = useChat();
   const isDraftPrivate = Boolean(pendingPrivateRecipientId && !selectedConversation);
+  const isPrivateChat = selectedConversation?.type === 'PRIVATE';
   const endRef = useRef<HTMLDivElement>(null);
+
+  const lastOwnMessageId = useMemo(() => {
+    if (!user?.id) return null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (String(messages[i].senderId) === String(user.id)) {
+        return messages[i].messageId;
+      }
+    }
+    return null;
+  }, [messages, user?.id]);
+
+  const showSeenOnLastOwn = useMemo(() => {
+    if (!isPrivateChat || !user?.id) return false;
+    const members =
+      detailMembers.length > 0 ? detailMembers : selectedConversation?.members;
+    const peer = getPeerMember(members, user.id);
+    return isLatestOwnMessageSeen(
+      messages,
+      user.id,
+      peer?.lastReadMessageId,
+      peer?.lastReadAt
+    );
+  }, [isPrivateChat, user?.id, messages, detailMembers, selectedConversation?.members]);
 
   useEffect(() => {
     if (pendingScrollMessageId) return;
@@ -65,6 +94,11 @@ export const MessageList = () => {
           message={msg}
           isOwn={msg.senderId === user?.id}
           highlighted={highlightMessageId === msg.messageId}
+          showSeenReceipt={
+            showSeenOnLastOwn &&
+            msg.senderId === user?.id &&
+            msg.messageId === lastOwnMessageId
+          }
         />
       ))}
       <div ref={endRef} />

@@ -12,6 +12,7 @@ interface MessageBubbleProps {
   isOwn: boolean;
   senderLabel?: string;
   highlighted?: boolean;
+  showSeenReceipt?: boolean;
 }
 
 export const MessageBubble = ({
@@ -19,6 +20,7 @@ export const MessageBubble = ({
   isOwn,
   senderLabel,
   highlighted = false,
+  showSeenReceipt = false,
 }: MessageBubbleProps) => {
   const time = formatMessageTime(message.createdAt);
 
@@ -38,7 +40,12 @@ export const MessageBubble = ({
           <div className="mb-0.5 text-xs font-semibold opacity-80">{senderLabel}</div>
         )}
         <MessageBody message={message} bodyClass={bodyClass} />
-        <div className={`mt-1 text-right ${metaClass}`}>{time}</div>
+        <div className={`mt-1 flex items-center justify-end gap-1.5 ${metaClass}`}>
+          {showSeenReceipt && (
+            <span className="text-[10px] font-medium opacity-90">Đã xem</span>
+          )}
+          <span>{time}</span>
+        </div>
       </div>
     </div>
   );

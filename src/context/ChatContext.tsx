@@ -26,6 +26,7 @@ import {
   getConversationUnreadCount,
   MAX_FILES_PER_MESSAGE,
   mergeConversationFromInbox,
+  zeroUnreadForCurrentUser,
 } from '@/utils/chatUtils';
 import { useAuth } from './AuthContext';
 
@@ -72,6 +73,8 @@ interface ChatContextValue {
   jumpToMessage: (messageId: string) => Promise<void>;
   loadAllAttachmentsForDetail: () => Promise<void>;
   getMyRoleInSelectedConversation: () => 'OWNER' | 'MEMBER' | null;
+  isPeerTyping: boolean;
+  notifyTyping: (typing: boolean) => void;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -99,12 +102,43 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [detailAttachmentMessages, setDetailAttachmentMessages] = useState<ChatMessage[]>([]);
   const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
   const [pendingScrollMessageId, setPendingScrollMessageId] = useState<string | null>(null);
+  const [isPeerTyping, setIsPeerTyping] = useState(false);
 
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const detailFilesAbortRef = useRef(0);
   const inboxUnsubscribeRef = useRef<(() => void) | null>(null);
   const presenceUnsubscribeRef = useRef<(() => void) | null>(null);
   const selectedIdRef = useRef<string | null>(null);
+  const markReadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const peerTypingClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleMarkConversationRead = useCallback(
+    (conversationId: string) => {
+      if (!userId) return;
+      if (markReadTimeoutRef.current) clearTimeout(markReadTimeoutRef.current);
+      markReadTimeoutRef.current = setTimeout(() => {
+        markReadTimeoutRef.current = null;
+        void chatService.markConversationRead(conversationId, userId).catch(() => undefined);
+      }, 300);
+    },
+    [userId]
+  );
+
+  useEffect(
+    () => () => {
+      if (markReadTimeoutRef.current) clearTimeout(markReadTimeoutRef.current);
+      if (peerTypingClearRef.current) clearTimeout(peerTypingClearRef.current);
+    },
+    []
+  );
+
+  useEffect(() => {
+    setIsPeerTyping(false);
+    if (peerTypingClearRef.current) {
+      clearTimeout(peerTypingClearRef.current);
+      peerTypingClearRef.current = null;
+    }
+  }, [selectedConversation?.id]);
 
   const normalizeConversation = (conv: Conversation): Conversation => ({
     ...conv,
@@ -148,11 +182,15 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   const bumpConversationPreview = useCallback(
     (msg: ChatMessage, serverConv?: Conversation) => {
-      const isActive = msg.conversationId === selectedIdRef.current;
+      const convId = String(msg.conversationId);
+      const isActive = convId === String(selectedIdRef.current ?? '');
       const isOwn = String(msg.senderId) === String(userId);
 
+      if (isActive && !isOwn) {
+        scheduleMarkConversationRead(convId);
+      }
+
       setConversations((prev) => {
-        const convId = String(msg.conversationId);
         const idx = prev.findIndex((c) => c.id === convId);
 
         let updated: Conversation;
@@ -182,29 +220,42 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           };
         }
 
+        if (isActive || isOwn) {
+          updated = zeroUnreadForCurrentUser(updated, userId);
+        }
+
         const rest = idx >= 0 ? prev.filter((_, i) => i !== idx) : prev;
         return [updated, ...rest];
+      });
+    },
+    [userId, scheduleMarkConversationRead]
+  );
+
+  const upsertConversationInList = useCallback(
+    (conv: Conversation) => {
+      let normalized = normalizeConversation(conv);
+      if (selectedIdRef.current && String(normalized.id) === String(selectedIdRef.current)) {
+        normalized = zeroUnreadForCurrentUser(normalized, userId);
+      }
+      setConversations((prev) => {
+        const idx = prev.findIndex((c) => c.id === normalized.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...normalized };
+          return next;
+        }
+        return [normalized, ...prev];
       });
     },
     [userId]
   );
 
-  const upsertConversationInList = useCallback((conv: Conversation) => {
-    const normalized = normalizeConversation(conv);
-    setConversations((prev) => {
-      const idx = prev.findIndex((c) => c.id === normalized.id);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], ...normalized };
-        return next;
-      }
-      return [normalized, ...prev];
-    });
-  }, []);
-
   const applyConversationUpdateFromInbox = useCallback(
     (conv: Conversation) => {
-      const normalized = normalizeConversation(conv);
+      let normalized = normalizeConversation(conv);
+      if (selectedIdRef.current && String(normalized.id) === String(selectedIdRef.current)) {
+        normalized = zeroUnreadForCurrentUser(normalized, userId);
+      }
       upsertConversationInList(normalized);
       setSelectedConversation((prev) =>
         prev?.id === normalized.id ? { ...prev, ...normalized } : prev
@@ -213,7 +264,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         setDetailMembers(normalized.members);
       }
     },
-    [upsertConversationInList]
+    [upsertConversationInList, userId]
   );
 
   const removeConversationFromInbox = useCallback((conv: Conversation) => {
@@ -253,13 +304,91 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
+  const applyPeerReadReceipt = useCallback(
+    (
+      conversationId: string,
+      readerUserId: string,
+      lastReadMessageId?: string,
+      lastReadAt?: string
+    ) => {
+      const patchMembers = (members?: ConversationMember[]) =>
+        members?.map((m) => {
+          const id = m.userId ?? m.id?.userId;
+          if (id != null && String(id) === String(readerUserId)) {
+            return { ...m, lastReadMessageId, lastReadAt };
+          }
+          return m;
+        });
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== conversationId) return c;
+          return { ...c, members: patchMembers(c.members) ?? c.members };
+        })
+      );
+      setDetailMembers((prev) => patchMembers(prev) ?? prev);
+      setSelectedConversation((prev) => {
+        if (!prev || prev.id !== conversationId) return prev;
+        return { ...prev, members: patchMembers(prev.members) ?? prev.members };
+      });
+    },
+    []
+  );
+
+  const notifyTyping = useCallback(
+    (typing: boolean) => {
+      const convId = selectedIdRef.current;
+      if (!convId || !userId || selectedConversation?.type !== 'PRIVATE') return;
+      if (!chatSocket.isConnected()) return;
+      chatSocket.sendTyping({ conversationId: convId, userId, typing });
+    },
+    [userId, selectedConversation?.type]
+  );
+
   const handleRealtimePayload = useCallback(
     (payload: ChatMessage | ChatRealtimeEnvelope) => {
-      if ('messageId' in payload && typeof payload.messageId === 'string') {
+      const envelope = payload as ChatRealtimeEnvelope;
+
+      if (envelope.eventType === 'TYPING') {
+        const convId = envelope.conversationId;
+        if (!convId || String(convId) !== String(selectedIdRef.current ?? '')) return;
+        if (String(envelope.userId) === String(userId)) return;
+        if (envelope.typing) {
+          setIsPeerTyping(true);
+          if (peerTypingClearRef.current) clearTimeout(peerTypingClearRef.current);
+          peerTypingClearRef.current = setTimeout(() => {
+            peerTypingClearRef.current = null;
+            setIsPeerTyping(false);
+          }, 5000);
+        } else {
+          if (peerTypingClearRef.current) clearTimeout(peerTypingClearRef.current);
+          peerTypingClearRef.current = null;
+          setIsPeerTyping(false);
+        }
+        return;
+      }
+
+      if (envelope.eventType === 'READ_RECEIPT') {
+        if (envelope.conversationId && envelope.userId) {
+          applyPeerReadReceipt(
+            String(envelope.conversationId),
+            envelope.userId,
+            envelope.lastReadMessageId,
+            envelope.lastReadAt
+          );
+        }
+        return;
+      }
+
+      if (
+        'messageId' in payload &&
+        typeof (payload as ChatMessage).messageId === 'string' &&
+        !envelope.eventType
+      ) {
         appendMessageIfActive(payload as ChatMessage);
         return;
       }
-      const envelope = payload as ChatRealtimeEnvelope;
+
       if (!envelope.message) return;
       if (envelope.eventType === 'MESSAGE_UPDATED') {
         patchMessageIfActive(envelope.message);
@@ -267,7 +396,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         appendMessageIfActive(envelope.message);
       }
     },
-    [appendMessageIfActive, patchMessageIfActive]
+    [userId, appendMessageIfActive, patchMessageIfActive, applyPeerReadReceipt]
   );
 
   const handleInboxEvent = useCallback(
@@ -938,6 +1067,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     jumpToMessage,
     loadAllAttachmentsForDetail,
     getMyRoleInSelectedConversation,
+    isPeerTyping,
+    notifyTyping,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
