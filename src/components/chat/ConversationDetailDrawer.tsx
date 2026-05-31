@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '@/context';
+import { ChatThemeScope } from './ChatThemeScope';
 import { useChat } from '@/context/ChatContext';
 import type { Conversation, ConversationMember } from '@/types';
 import { formatMessageTime, getOtherMemberId } from '@/utils/chatUtils';
@@ -79,7 +80,7 @@ function ActionButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="w-full rounded-lg border-0 bg-white/5 px-3 py-2 text-left text-sm text-[var(--discord-text)] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+      className="w-full rounded-lg border-0 bg-[var(--discord-hover)] px-3 py-2 text-left text-sm text-[var(--discord-text)] transition hover:bg-[var(--discord-active)] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {children}
     </button>
@@ -202,7 +203,7 @@ export const ConversationDetailDrawer = ({
   };
 
   return createPortal(
-    <>
+    <ChatThemeScope className="fixed inset-0 z-[200]">
       <div className="conversation-detail-root fixed inset-0 z-[200]" role="presentation">
         <button
           type="button"
@@ -571,7 +572,7 @@ export const ConversationDetailDrawer = ({
           if (ok) setRemoveTargetId(null);
         }}
       />
-    </>,
+    </ChatThemeScope>,
     document.body
   );
 };

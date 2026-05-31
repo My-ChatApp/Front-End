@@ -1,34 +1,5 @@
-/* Discord-inspired chat theme (no DaisyUI) */
+/* Discord-inspired chat layout (tokens from chat-theme.css via data-theme) */
 .chat-app {
-  --discord-app: #1e1f22;
-  --discord-rail: #18191c;
-  --discord-sidebar: #2b2d31;
-  --discord-panel: #313338;
-  --discord-panel-strong: #2a2c30;
-  --discord-chat: #313338;
-  --discord-hover: rgba(255, 255, 255, 0.08);
-  --discord-active: rgba(88, 101, 242, 0.22);
-  --discord-border: rgba(255, 255, 255, 0.08);
-  --discord-border-strong: rgba(255, 255, 255, 0.14);
-  --discord-text: #f2f3f5;
-  --discord-text-muted: rgba(242, 243, 245, 0.62);
-  --discord-text-faint: rgba(242, 243, 245, 0.42);
-  --discord-accent: #5865f2;
-  --discord-accent-contrast: #ffffff;
-  --discord-overlay: rgba(0, 0, 0, 0.85);
-  --discord-success: #3ba55d;
-  --discord-danger: #da373c;
-  --discord-radius: 8px;
-  --discord-radius-sm: 4px;
-  --discord-shadow: 0 18px 40px rgba(0, 0, 0, 0.32), 0 8px 18px rgba(0, 0, 0, 0.22);
-  --message-sent-bg: var(--discord-accent);
-  --message-sent-text: var(--discord-accent-contrast);
-  --message-sent-muted: rgba(255, 255, 255, 0.72);
-  --message-received-bg: var(--discord-panel-strong);
-  --message-received-text: var(--discord-text);
-  --message-received-muted: var(--discord-text-muted);
-  --message-row-hover: var(--discord-hover);
-
   min-height: 100vh;
   background: var(--discord-app);
   color: var(--discord-text);
@@ -230,7 +201,7 @@
   background: linear-gradient(
     135deg,
     color-mix(in srgb, var(--discord-accent) 85%, #7289da) 0%,
-    color-mix(in srgb, var(--discord-accent) 45%, #1e1f22) 55%,
+    color-mix(in srgb, var(--discord-accent) 45%, var(--discord-app)) 55%,
     var(--discord-panel-strong) 100%
   );
 }

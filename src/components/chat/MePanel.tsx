@@ -30,6 +30,7 @@ import {
   validateAvatarFile,
   validateProfileForm,
 } from '@/utils/validation';
+import { ThemeSettingsSection } from './ThemeSettingsSection';
 
 function resolveDisplayName(
   profile: UserProfile | null,
@@ -646,6 +647,8 @@ export const MePanel = () => {
                     }
                   />
                 </div>
+
+                <ThemeSettingsSection />
 
                 <div className="mt-4 space-y-2">
                   <div className="grid grid-cols-2 gap-2">

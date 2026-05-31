@@ -1,4 +1,14 @@
 @import "tailwindcss";
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark --prefersdark,
+    cupcake,
+    retro,
+    valentine,
+    nord;
+}
+@import "./chat-theme.css";
 @import "./discord-chat.css";
 
 /* * {

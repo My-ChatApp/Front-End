@@ -1,4 +1,5 @@
 import type {
+  ChatMessage,
   ConversationMember,
   MessageAttachment,
   MessageType,
@@ -366,6 +367,69 @@ export function sumConversationUnreadCount(
     (sum, conv) => sum + getConversationUnreadCount(conv, currentUserId),
     0
   );
+}
+
+/** Clears top-level and member unread for the current user (e.g. while viewing the conversation). */
+export function zeroUnreadForCurrentUser<T extends { unreadCount?: number; members?: ConversationMember[] }>(
+  conv: T,
+  currentUserId: string
+): T {
+  const members = conv.members?.map((m) => {
+    const id = m.userId ?? m.id?.userId;
+    if (id != null && String(id) === String(currentUserId)) {
+      return { ...m, unreadCount: 0 };
+    }
+    return m;
+  });
+  return {
+    ...conv,
+    unreadCount: 0,
+    ...(members ? { members } : {}),
+  };
+}
+
+export function getPeerMember(
+  members: ConversationMember[] | undefined,
+  currentUserId: string
+): ConversationMember | undefined {
+  return members?.find((m) => {
+    const id = m.userId ?? m.id?.userId;
+    return id != null && String(id) !== String(currentUserId);
+  });
+}
+
+/** Level-A read receipt: peer has read through the sender's latest message. */
+export function isLatestOwnMessageSeen(
+  messages: ChatMessage[],
+  myUserId: string,
+  peerLastReadMessageId?: string,
+  peerLastReadAt?: string
+): boolean {
+  let lastOwn: ChatMessage | undefined;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (String(messages[i].senderId) === String(myUserId)) {
+      lastOwn = messages[i];
+      break;
+    }
+  }
+  if (!lastOwn) return false;
+
+  if (
+    peerLastReadMessageId &&
+    String(peerLastReadMessageId) === String(lastOwn.messageId)
+  ) {
+    return true;
+  }
+
+  if (peerLastReadAt && lastOwn.createdAt) {
+    const readTs = new Date(peerLastReadAt).getTime();
+    const msgTs = new Date(lastOwn.createdAt).getTime();
+    if (!Number.isNaN(readTs) && !Number.isNaN(msgTs) && readTs >= msgTs) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function normalizeUserIdForCompare(id?: string | null): string {
