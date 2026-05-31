@@ -10,7 +10,7 @@ export const Layout = () => {
   return (
     <div
       className={`min-h-screen relative overflow-x-hidden font-sans ${
-        isChatPage ? 'bg-[#1e1f22]' : 'bg-slate-50'
+        isChatPage ? 'bg-transparent' : 'bg-slate-50'
       }`}
     >
       {!isChatPage && (

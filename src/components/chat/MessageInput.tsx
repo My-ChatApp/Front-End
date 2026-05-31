@@ -106,7 +106,7 @@ export const MessageInput = () => {
   };
 
   return (
-    <div className="shrink-0 border-t border-white/10 px-4 py-3">
+    <div className="shrink-0 border-t border-[var(--discord-border)] px-4 py-3">
       <div className="discord-composer flex items-end gap-2 px-3 py-2">
         <button
           type="button"

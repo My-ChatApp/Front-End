@@ -147,7 +147,7 @@ function FileMessageContent({
       download={fileName}
       className={`flex items-center gap-3 rounded-lg border border-white/15 bg-black/10 px-3 py-2.5 transition-colors hover:bg-black/20 ${bodyClass}`}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--discord-hover)]">
         <Icon className="size-5 opacity-90" />
       </span>
       <span className="min-w-0 flex-1">

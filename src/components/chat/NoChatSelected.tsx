@@ -4,7 +4,7 @@ export const NoChatSelected = () => {
   return (
     <div className="flex w-full flex-1 items-center justify-center overflow-y-auto discord-chat-area p-6 md:p-10">
       <div className="w-full max-w-xl px-4 py-6 text-left md:px-8 md:py-10">
-        <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-[var(--discord-accent)] shadow-lg ring-2 ring-white/10">
+        <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-[var(--discord-accent)] shadow-lg ring-2 ring-[var(--discord-border)]">
           <MessageCircle className="size-9 text-white" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">MyChatApp</h1>

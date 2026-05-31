@@ -69,7 +69,7 @@ export const ChatPanel = () => {
       <MessageList />
       {showTypingInChat && (
         <div
-          className="shrink-0 border-t border-white/5 px-4 py-1.5"
+          className="shrink-0 border-t border-[var(--discord-border)] px-4 py-1.5"
           role="status"
           aria-live="polite"
         >
