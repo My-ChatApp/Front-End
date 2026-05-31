@@ -9,6 +9,7 @@ import { MessageBubble } from './MessageBubble';
 import { MessageSkeleton } from './skeletons/MessageSkeleton';
 
 const NEAR_BOTTOM_PX = 80;
+const SCROLL_UP_THRESHOLD_PX = 120;
 
 const isNearBottom = (el: HTMLDivElement) =>
   el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
@@ -34,6 +35,7 @@ export const MessageList = () => {
   const endRef = useRef<HTMLDivElement>(null);
   const pendingScrollRestoreRef = useRef<{ height: number; top: number } | null>(null);
   const initialScrollPendingRef = useRef(true);
+  const userScrolledUpRef = useRef(false);
 
   const lastOwnMessageId = useMemo(() => {
     if (!user?.id) return null;
@@ -60,7 +62,7 @@ export const MessageList = () => {
 
   const handleLoadOlder = useCallback(async () => {
     const el = scrollRef.current;
-    if (!el || isLoadingOlder || !hasMoreOlder) return;
+    if (!el || isLoadingOlder || !hasMoreOlder || !userScrolledUpRef.current) return;
 
     pendingScrollRestoreRef.current = {
       height: el.scrollHeight,
@@ -69,8 +71,17 @@ export const MessageList = () => {
     await loadOlderMessages();
   }, [isLoadingOlder, hasMoreOlder, loadOlderMessages]);
 
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollTop <= SCROLL_UP_THRESHOLD_PX) {
+      userScrolledUpRef.current = true;
+    }
+  }, []);
+
   useEffect(() => {
     initialScrollPendingRef.current = true;
+    userScrolledUpRef.current = false;
   }, [selectedConversation?.id]);
 
   useLayoutEffect(() => {
@@ -137,7 +148,7 @@ export const MessageList = () => {
   }
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto py-4">
+    <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto py-4">
       <div ref={topSentinelRef} className="h-px shrink-0" aria-hidden />
       {isLoadingOlder && (
         <div className="mb-3 px-2">

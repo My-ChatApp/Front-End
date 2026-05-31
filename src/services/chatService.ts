@@ -62,7 +62,7 @@ export const chatService = {
   getMessages: async (
     conversationId: string,
     userId: string,
-    limit = 10,
+    limit = 20,
     before?: string
   ): Promise<ApiResponse<MessagesPageResponse>> => {
     const response = await conversationClient.get<ApiResponse<MessagesPageResponse>>(
