@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/context';
 import { useChat } from '@/context/ChatContext';
 import {
@@ -7,6 +7,11 @@ import {
 } from '@/utils/chatUtils';
 import { MessageBubble } from './MessageBubble';
 import { MessageSkeleton } from './skeletons/MessageSkeleton';
+
+const NEAR_BOTTOM_PX = 80;
+
+const isNearBottom = (el: HTMLDivElement) =>
+  el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
 
 export const MessageList = () => {
   const { user } = useAuth();
@@ -24,7 +29,11 @@ export const MessageList = () => {
   } = useChat();
   const isDraftPrivate = Boolean(pendingPrivateRecipientId && !selectedConversation);
   const isPrivateChat = selectedConversation?.type === 'PRIVATE';
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const pendingScrollRestoreRef = useRef<{ height: number; top: number } | null>(null);
+  const initialScrollPendingRef = useRef(true);
 
   const lastOwnMessageId = useMemo(() => {
     if (!user?.id) return null;
@@ -49,10 +58,63 @@ export const MessageList = () => {
     );
   }, [isPrivateChat, user?.id, messages, detailMembers, selectedConversation?.members]);
 
+  const handleLoadOlder = useCallback(async () => {
+    const el = scrollRef.current;
+    if (!el || isLoadingOlder || !hasMoreOlder) return;
+
+    pendingScrollRestoreRef.current = {
+      height: el.scrollHeight,
+      top: el.scrollTop,
+    };
+    await loadOlderMessages();
+  }, [isLoadingOlder, hasMoreOlder, loadOlderMessages]);
+
   useEffect(() => {
-    if (pendingScrollMessageId) return;
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoadingMessages, pendingScrollMessageId]);
+    initialScrollPendingRef.current = true;
+  }, [selectedConversation?.id]);
+
+  useLayoutEffect(() => {
+    const pending = pendingScrollRestoreRef.current;
+    const el = scrollRef.current;
+    if (!pending || !el) return;
+
+    const delta = el.scrollHeight - pending.height;
+    el.scrollTop = pending.top + delta;
+    pendingScrollRestoreRef.current = null;
+  }, [messages]);
+
+  useEffect(() => {
+    const root = scrollRef.current;
+    const sentinel = topSentinelRef.current;
+    if (!root || !sentinel || !hasMoreOlder) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) void handleLoadOlder();
+      },
+      { root, rootMargin: '120px 0px 0px 0px', threshold: 0 }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreOlder, isLoadingOlder, handleLoadOlder, selectedConversation?.id]);
+
+  useEffect(() => {
+    if (pendingScrollMessageId || isLoadingOlder) return;
+
+    const el = scrollRef.current;
+    if (!el) return;
+
+    if (initialScrollPendingRef.current && !isLoadingMessages) {
+      initialScrollPendingRef.current = false;
+      endRef.current?.scrollIntoView({ behavior: 'auto' });
+      return;
+    }
+
+    if (isNearBottom(el)) {
+      endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isLoadingMessages, pendingScrollMessageId, isLoadingOlder]);
 
   if (isLoadingMessages) {
     return (
@@ -75,17 +137,11 @@ export const MessageList = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto py-4">
-      {hasMoreOlder && (
-        <div className="mb-3 flex justify-center px-2">
-          <button
-            type="button"
-            disabled={isLoadingOlder}
-            onClick={() => void loadOlderMessages()}
-            className="rounded-md bg-[var(--discord-bg-tertiary)] px-3 py-1.5 text-xs text-[var(--discord-text-muted)] hover:bg-[var(--discord-bg-modifier-hover)] disabled:opacity-50"
-          >
-            {isLoadingOlder ? 'Đang tải...' : 'Tải tin cũ hơn'}
-          </button>
+    <div ref={scrollRef} className="flex-1 overflow-y-auto py-4">
+      <div ref={topSentinelRef} className="h-px shrink-0" aria-hidden />
+      {isLoadingOlder && (
+        <div className="mb-3 px-2">
+          <MessageSkeleton count={2} />
         </div>
       )}
       {messages.map((msg) => (
