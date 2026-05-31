@@ -149,24 +149,14 @@ export const MessageInput = () => {
         subtitle: 'Rút gọn nội dung chính trong đoạn chat',
       },
       {
-        id: 'bot-weather-local',
-        label: 'Thời tiết ở vị trí của tôi hôm nay',
-        subtitle: 'Dùng vị trí chia sẻ để xem thời tiết địa phương',
+        id: 'bot-joke-short',
+        label: 'Kể 1 câu chuyện cười ngắn',
+        subtitle: 'Một câu vui nhanh, gọn và nhẹ nhàng',
       },
       {
-        id: 'bot-trending-vn',
-        label: 'Trending ở Việt Nam hôm nay là gì',
-        subtitle: 'Xem chủ đề, tin tức, hoặc nhạc đang nổi tại VN',
-      },
-      {
-        id: 'bot-trending-global',
-        label: 'Trending quốc tế hiện tại là gì',
-        subtitle: 'Xem xu hướng nổi bật ở nước ngoài',
-      },
-      {
-        id: 'bot-music-trending',
-        label: 'Nhạc nào đang trending hiện tại',
-        subtitle: 'Gợi ý âm nhạc phổ biến để nghe nhanh',
+        id: 'bot-motivation',
+        label: 'Câu nói truyền động lực',
+        subtitle: 'Một câu ngắn để tiếp thêm năng lượng',
       },
     ],
     []
