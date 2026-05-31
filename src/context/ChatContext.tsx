@@ -443,7 +443,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         if (delays[i] > 0) {
           await new Promise((r) => setTimeout(r, delays[i]));
         }
-        const res = await chatService.getMessages(conversationId, userId, 10, before);
+        const res = await chatService.getMessages(conversationId, userId, 20, before);
         if (!res.success || !res.data) {
           throw new Error(res.message || 'Không tải được tin nhắn');
         }
@@ -602,7 +602,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       const page = await fetchMessagesPage(convId, oldest.messageId);
       if (page) {
         setMessages((prev) => mergeUnique(page.messages, prev));
-        setHasMoreOlder(page.hasMore);
+        setHasMoreOlder(page.messages.length === 0 ? false : page.hasMore);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Không tải được tin cũ hơn');
