@@ -75,6 +75,7 @@ interface ChatContextValue {
   getMyRoleInSelectedConversation: () => 'OWNER' | 'MEMBER' | null;
   isPeerTyping: boolean;
   notifyTyping: (typing: boolean) => void;
+  dismissBotMessage: (messageId: string) => void;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -292,6 +293,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     },
     [bumpConversationPreview]
   );
+
+  const dismissBotMessage = useCallback((messageId: string) => {
+    setMessages((prev) => prev.filter((msg) => msg.messageId !== messageId));
+  }, []);
 
   const patchMessageIfActive = useCallback((msg: ChatMessage) => {
     if (msg.conversationId !== selectedIdRef.current) return;
@@ -627,8 +632,49 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       }
       if (!conv) return false;
 
+      // If message targets the ChatBot, handle locally by calling agent-service
+      const isAgent = /@ChatBot\b/i.test(trimmed);
+
       setIsSending(true);
       try {
+        if (isAgent) {
+          // prepare history (last 10 messages) for agent
+          const history = messages
+            .slice(-10)
+            .map((m) => ({ role: String(m.senderId) === String(userId) ? 'user' : 'assistant', content: m.content || '' }));
+
+          try {
+            const res = await fetch('http://localhost:8088/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: trimmed, history }),
+            });
+            if (!res.ok) {
+              const err = await res.text();
+              throw new Error(err || 'Agent service error');
+            }
+            const body = await res.json();
+            const reply = body.reply || '';
+
+            // append local-only bot reply (not sent to server)
+            const localMsg: ChatMessage = {
+              messageId: `agent-local-${Date.now()}`,
+              conversationId: conv.id,
+              senderId: '__chatbot__',
+              type: 'TEXT',
+              content: reply,
+              createdAt: new Date().toISOString(),
+            };
+            setMessages((prev) => sortMessages([...prev, localMsg]));
+            setPendingPrivateRecipientId(null);
+            return true;
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Gọi ChatBot thất bại');
+            return false;
+          }
+        }
+
+        // normal send via socket
         if (!chatSocket.isConnected()) {
           await chatSocket.connect();
           setSocketConnected(true);
@@ -649,6 +695,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       selectedConversation,
       pendingPrivateRecipientId,
       userId,
+      messages,
       ensurePrivateConversation,
       subscribeToConversation,
     ]
@@ -1069,6 +1116,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     getMyRoleInSelectedConversation,
     isPeerTyping,
     notifyTyping,
+    dismissBotMessage,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

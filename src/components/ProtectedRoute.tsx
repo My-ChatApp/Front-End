@@ -12,7 +12,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   // Sử dụng spinner giao diện mới
   if (isLoading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center">
+      <div className="app-page-shell min-h-[calc(100vh-80px)] flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
