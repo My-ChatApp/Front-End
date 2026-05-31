@@ -18,6 +18,7 @@ export const ChatPanel = () => {
     selectedConversation,
     pendingPrivateRecipientId,
     activeNavView,
+    isPeerTyping,
   } = useChat();
   const [detailOpen, setDetailOpen] = useState(false);
 
@@ -34,6 +35,10 @@ export const ChatPanel = () => {
         user?.id || '',
         peerName
       );
+
+  const showTypingInChat =
+    isPeerTyping &&
+    (selectedConversation?.type === 'PRIVATE' || Boolean(pendingPrivateRecipientId));
 
   useEffect(() => {
     setDetailOpen(false);
@@ -62,6 +67,17 @@ export const ChatPanel = () => {
         onToggleDetail={() => setDetailOpen((v) => !v)}
       />
       <MessageList />
+      {showTypingInChat && (
+        <div
+          className="shrink-0 border-t border-white/5 px-4 py-1.5"
+          role="status"
+          aria-live="polite"
+        >
+          <p className="text-xs italic text-[var(--discord-text-muted)]">
+            {peerName ? `${peerName} đang nhập...` : 'đang nhập...'}
+          </p>
+        </div>
+      )}
       <MessageInput />
       <ConversationDetailDrawer
         open={detailOpen}
