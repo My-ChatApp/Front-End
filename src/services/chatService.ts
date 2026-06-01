@@ -1,7 +1,6 @@
 import {
   AddConversationMemberRequest,
   ApiResponse,
-  ChatMessage,
   Conversation,
   ConversationMember,
   CreateConversationRequest,
