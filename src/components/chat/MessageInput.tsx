@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, KeyboardEvent } from 'react';
-import { AtSign, Bot, Paperclip, Send } from 'lucide-react';
+import { AtSign, Bot, Paperclip, Pencil, Send, X } from 'lucide-react';
 import { useAuth } from '@/context';
 import { useChat } from '@/context/ChatContext';
 import { useUserDisplayName } from '@/hooks/useUserDisplayName';
@@ -115,6 +115,9 @@ export const MessageInput = () => {
     sendFileMessage,
     isSending,
     notifyTyping,
+    editingMessage,
+    cancelEditMessage,
+    saveEditedMessage,
   } = useChat();
   const [text, setText] = useState('');
   const [mentionRange, setMentionRange] = useState<{
@@ -279,7 +282,17 @@ export const MessageInput = () => {
     return () => stopTyping();
   }, [selectedConversation?.id, stopTyping]);
 
+  useEffect(() => {
+    if (editingMessage) {
+      setText(editingMessage.content || '');
+      setMentionRange(null);
+      requestAnimationFrame(() => textareaRef.current?.focus());
+    }
+  }, [editingMessage?.messageId]);
+
   if (!selectedConversation && !pendingPrivateRecipientId) return null;
+
+  const isEditMode = Boolean(editingMessage);
 
   const handleTextChange = (value: string) => {
     setText(value);
@@ -302,6 +315,14 @@ export const MessageInput = () => {
     const value = text.trim();
     if (!value || isSending) return;
     stopTyping();
+    if (isEditMode) {
+      const ok = await saveEditedMessage(value);
+      if (ok) {
+        setText('');
+        setMentionRange(null);
+      }
+      return;
+    }
     const ok = await sendTextMessage(value);
     if (ok) {
       setText('');
@@ -326,11 +347,32 @@ export const MessageInput = () => {
 
   return (
     <div className="shrink-0 border-t border-[var(--discord-border)] bg-[var(--discord-panel)] px-4 py-4 backdrop-blur-md">
+      {isEditMode && (
+        <div className="mb-2 flex items-center justify-between gap-2 rounded-2xl border border-[var(--discord-border)] bg-[var(--discord-panel-strong)] px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2 text-sm text-[var(--discord-text)]">
+            <Pencil className="size-4 shrink-0 text-[var(--discord-accent)]" />
+            <span className="font-medium">Đang chỉnh sửa tin nhắn</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              cancelEditMessage();
+              setText('');
+              setMentionRange(null);
+            }}
+            className="discord-icon-button flex size-8 shrink-0 items-center justify-center"
+            title="Hủy chỉnh sửa"
+            aria-label="Hủy chỉnh sửa"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
       <div className="relative discord-composer flex items-end gap-2 px-3 py-3">
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          disabled={isSending}
+          disabled={isSending || isEditMode}
           className="discord-icon-button flex size-10 shrink-0 items-center justify-center"
           title={`Đính kèm file (tối đa ${MAX_FILES_PER_MESSAGE})`}
         >
@@ -358,7 +400,7 @@ export const MessageInput = () => {
           onKeyDown={handleKeyDown}
           onClick={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
           onKeyUp={(e) => syncMentionState(e.currentTarget.value, e.currentTarget.selectionStart ?? e.currentTarget.value.length)}
-          placeholder={`Nhắn tin với ${chatLabel}...`}
+          placeholder={isEditMode ? 'Nội dung tin nhắn...' : `Nhắn tin với ${chatLabel}...`}
           disabled={isSending}
           className="discord-input-reset max-h-32 min-h-6 flex-1 resize-none py-2 text-[15px] text-[var(--discord-text)] placeholder:text-[var(--discord-placeholder)]"
         />
@@ -397,7 +439,7 @@ export const MessageInput = () => {
           onClick={() => void handleSend()}
           disabled={!text.trim() || isSending}
           className="discord-icon-button flex size-9 shrink-0 items-center justify-center text-[var(--discord-accent)] disabled:opacity-40"
-          title="Gửi"
+          title={isEditMode ? 'Lưu chỉnh sửa' : 'Gửi'}
         >
           <Send className="size-5" />
         </button>

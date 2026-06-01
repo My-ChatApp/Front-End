@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { UserPlus, Users } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Search, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '@/context';
 import { useChat } from '@/context/ChatContext';
 import { friendService } from '@/services/friendService';
@@ -7,6 +7,7 @@ import { userService, AppUser } from '@/services/userService';
 import { FriendRequest } from '@/types';
 import { ChatAvatar } from './ChatAvatar';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { ConfirmModal } from './ConfirmModal';
 
 type Tab = 'friends' | 'incoming' | 'outgoing' | 'add';
 
@@ -17,9 +18,19 @@ const TAB_LABELS: Record<Tab, string> = {
   add: 'Thêm bạn',
 };
 
+function formatUserLabel(u: AppUser): string {
+  return (
+    u.displayName?.trim() ||
+    u.username ||
+    u.email ||
+    `${u.id.slice(0, 8)}…`
+  );
+}
+
 function userLabel(userId: string, users: AppUser[]): string {
   const u = users.find((x) => x.id === userId);
-  return u?.username || u?.email || `${userId.slice(0, 8)}…`;
+  if (u) return formatUserLabel(u);
+  return `${userId.slice(0, 8)}…`;
 }
 
 export const FriendsPanel = () => {
@@ -32,9 +43,39 @@ export const FriendsPanel = () => {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [unfriendTargetId, setUnfriendTargetId] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<AppUser[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchSeqRef = useRef(0);
 
   const userId = user?.id || '';
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (tab !== 'add') return;
+    const q = debouncedQuery;
+    if (q.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    if (!userId) return;
+
+    const seq = ++searchSeqRef.current;
+    setSearchLoading(true);
+    void userService.search(q, userId).then((res) => {
+      if (searchSeqRef.current !== seq) return;
+      setSearchResults(res.success && res.data ? res.data : []);
+      setSearchLoading(false);
+    });
+  }, [debouncedQuery, tab, userId]);
 
   const loadFriends = useCallback(async () => {
     if (!userId) return;
@@ -99,9 +140,6 @@ export const FriendsPanel = () => {
   };
 
   const handleUnfriend = async (friendUserId: string) => {
-    const ok = window.confirm('Bạn chắc chắn muốn hủy kết bạn với người này?');
-    if (!ok) return;
-
     setActionId(friendUserId);
     try {
       await friendService.removeFriend(friendUserId, userId);
@@ -180,12 +218,26 @@ export const FriendsPanel = () => {
                     openPrivateChat(fid);
                     setActiveNavView('chat');
                   }}
-                  onUnfriend={() => handleUnfriend(fid)}
+                  onUnfriend={() => setUnfriendTargetId(fid)}
                 />
               ))
             )}
           </ul>
         )}
+
+        <ConfirmModal
+          open={Boolean(unfriendTargetId)}
+          title="Hủy kết bạn"
+          description="Bạn chắc chắn muốn hủy kết bạn với người này?"
+          confirmLabel="Hủy kết bạn"
+          danger
+          onClose={() => setUnfriendTargetId(null)}
+          onConfirm={async () => {
+            if (!unfriendTargetId) return;
+            await handleUnfriend(unfriendTargetId);
+            setUnfriendTargetId(null);
+          }}
+        />
 
         {!loading && tab === 'incoming' && (
           <ul className="space-y-2">
@@ -193,30 +245,28 @@ export const FriendsPanel = () => {
               <p className="text-sm text-[var(--discord-text-muted)]">Không có lời mời</p>
             ) : (
               incoming.map((req) => (
-                <li
+                <FriendRequestRow
                   key={req.id}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-[var(--discord-panel)] p-3"
+                  otherUserId={req.senderId}
+                  users={users}
                 >
-                  <span className="text-sm">Từ {userLabel(req.senderId, users)}</span>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      disabled={actionId === req.id}
-                      onClick={() => handleAccept(req)}
-                      className="rounded bg-[var(--discord-success)] px-2 py-1 text-xs text-white"
-                    >
-                      Chấp nhận
-                    </button>
-                    <button
-                      type="button"
-                      disabled={actionId === req.id}
-                      onClick={() => handleReject(req)}
-                      className="rounded bg-[var(--discord-danger)] px-2 py-1 text-xs text-white"
-                    >
-                      Từ chối
-                    </button>
-                  </div>
-                </li>
+                  <button
+                    type="button"
+                    disabled={actionId === req.id}
+                    onClick={() => handleAccept(req)}
+                    className="rounded bg-[var(--discord-success)] px-2 py-1 text-xs text-white"
+                  >
+                    Chấp nhận
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionId === req.id}
+                    onClick={() => handleReject(req)}
+                    className="rounded bg-[var(--discord-danger)] px-2 py-1 text-xs text-white"
+                  >
+                    Từ chối
+                  </button>
+                </FriendRequestRow>
               ))
             )}
           </ul>
@@ -228,11 +278,11 @@ export const FriendsPanel = () => {
               <p className="text-sm text-[var(--discord-text-muted)]">Chưa gửi lời mời nào</p>
             ) : (
               outgoing.map((req) => (
-                <li
+                <FriendRequestRow
                   key={req.id}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-[var(--discord-panel)] p-3"
+                  otherUserId={req.receiverId}
+                  users={users}
                 >
-                  <span className="text-sm">Đến {userLabel(req.receiverId, users)}</span>
                   <button
                     type="button"
                     disabled={actionId === req.id}
@@ -241,7 +291,7 @@ export const FriendsPanel = () => {
                   >
                     Thu hồi
                   </button>
-                </li>
+                </FriendRequestRow>
               ))
             )}
           </ul>
@@ -252,28 +302,67 @@ export const FriendsPanel = () => {
             {sendError && (
               <p className="mb-2 text-xs text-[var(--discord-danger)]">{sendError}</p>
             )}
+            <div className="relative mb-3">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-[var(--discord-text-muted)]" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Email, @username hoặc tên hiển thị"
+                className="w-full rounded-md border border-[var(--discord-border)] bg-[var(--discord-input)] py-2 pl-9 pr-3 text-sm text-[var(--discord-text)] placeholder:text-[var(--discord-text-muted)] focus:border-[var(--discord-accent)] focus:outline-none"
+              />
+            </div>
+            {debouncedQuery.length > 0 && debouncedQuery.length < 2 && (
+              <p className="mb-2 text-xs text-[var(--discord-text-muted)]">
+                Nhập ít nhất 2 ký tự
+              </p>
+            )}
+            {searchLoading && (
+              <p className="text-center text-sm text-[var(--discord-text-muted)]">Đang tìm...</p>
+            )}
+            {!searchLoading && debouncedQuery.length >= 2 && searchResults.length === 0 && (
+              <p className="text-sm text-[var(--discord-text-muted)]">Không tìm thấy người dùng</p>
+            )}
+            {!searchLoading && debouncedQuery.length < 2 && (
+              <p className="text-sm text-[var(--discord-text-muted)]">
+                Tìm bạn bè bằng email, @username hoặc tên hiển thị
+              </p>
+            )}
             <ul className="space-y-1">
-              {users.map((u) => {
+              {searchResults.map((u) => {
                 const isFriend = friendUserIds.has(u.id);
                 const isPending = pendingReceiverIds.has(u.id);
                 const disabled = isFriend || isPending || actionId === u.id;
+                const primary = formatUserLabel(u);
+                const avatarName = u.displayName?.trim() || u.username || u.email || '?';
 
                 return (
                   <li key={u.id} className="discord-list-item justify-between">
-                    <div className="flex items-center gap-2">
-                      <ChatAvatar name={u.username || u.email || '?'} size="sm" />
-                      <span className="text-sm">{u.username || u.email}</span>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <ChatAvatar name={avatarName} size="sm" />
+                      <div className="min-w-0">
+                        <span className="block truncate text-sm">{primary}</span>
+                        {u.username && (
+                          <span className="block truncate text-[10px] text-[var(--discord-text-muted)]">
+                            @{u.username}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {isFriend ? (
-                      <span className="text-[10px] text-[var(--discord-text-muted)]">Đã là bạn</span>
+                      <span className="shrink-0 text-[10px] text-[var(--discord-text-muted)]">
+                        Đã là bạn
+                      </span>
                     ) : isPending ? (
-                      <span className="text-[10px] text-[var(--discord-text-muted)]">Đã gửi</span>
+                      <span className="shrink-0 text-[10px] text-[var(--discord-text-muted)]">
+                        Đã gửi
+                      </span>
                     ) : (
                       <button
                         type="button"
                         disabled={disabled}
                         onClick={() => handleSendRequest(u.id)}
-                        className="discord-icon-button flex size-8 items-center justify-center text-[var(--discord-accent)] disabled:opacity-40"
+                        className="discord-icon-button flex size-8 shrink-0 items-center justify-center text-[var(--discord-accent)] disabled:opacity-40"
                         title="Gửi lời mời"
                       >
                         <UserPlus className="size-4" />
@@ -289,6 +378,52 @@ export const FriendsPanel = () => {
     </div>
   );
 };
+
+function FriendRequestRow({
+  otherUserId,
+  users,
+  children,
+}: {
+  otherUserId: string;
+  users: AppUser[];
+  children: ReactNode;
+}) {
+  const cached = users.find((x) => x.id === otherUserId);
+  const profile = useUserProfile(otherUserId);
+
+  const fullName =
+    cached?.displayName?.trim() || profile.fullName?.trim() || null;
+  const username = cached?.username?.trim() || profile.username?.trim() || null;
+  const email = cached?.email?.trim() || profile.email?.trim() || null;
+  const avatarName = fullName || username || email || userLabel(otherUserId, users);
+
+  return (
+    <li className="flex items-center justify-between gap-2 rounded-lg bg-[var(--discord-panel)] p-3">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <ChatAvatar name={avatarName} avatarUrl={profile.avatarUrl} size="sm" />
+        <div className="min-w-0">
+          {fullName && (
+            <span className="block truncate text-sm font-medium">{fullName}</span>
+          )}
+          {username && (
+            <span className="block truncate text-[10px] text-[var(--discord-text-muted)]">
+              @{username}
+            </span>
+          )}
+          {email && (
+            <span className="block truncate text-[10px] text-[var(--discord-text-faint)]">
+              {email}
+            </span>
+          )}
+          {!fullName && !username && !email && (
+            <span className="block truncate text-sm">{avatarName}</span>
+          )}
+        </div>
+      </div>
+      <div className="flex shrink-0 gap-1">{children}</div>
+    </li>
+  );
+}
 
 function FriendRow({
   userId,

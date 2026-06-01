@@ -143,6 +143,7 @@ export interface ChatMessage {
   content?: string;
   replyToMessageId?: string;
   edited?: boolean;
+  editedAt?: string;
   deleted?: boolean;
   createdAt?: string;
   attachmentCount?: number;

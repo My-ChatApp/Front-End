@@ -1,9 +1,18 @@
-import { File, FileText, Film, Trash2 } from 'lucide-react';
+import { File, FileText, Film, Pencil, Send, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { ChatMessage } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
+import { MessageReactions } from './MessageReactions';
+import { ReactionPickerButton } from './ReactionPickerButton';
+import type { ReactionType } from '@/utils/reactions';
+import { ConfirmModal } from './ConfirmModal';
 import {
+  CHATBOT_SENDER_ID,
   formatMessageTime,
   parseFileMessageContent,
+  canEditTextMessage,
+  canDeleteMessage,
   resolveAllFileMedia,
   type ResolvedFileMedia,
 } from '@/utils/chatUtils';
@@ -23,9 +32,17 @@ export const MessageBubble = ({
   highlighted = false,
   showSeenReceipt = false,
 }: MessageBubbleProps) => {
-  const { dismissBotMessage } = useChat();
+  const { user } = useAuth();
+  const { dismissBotMessage, sendBotDraft, deleteMessage, toggleMessageReaction, startEditMessage } =
+    useChat();
   const time = formatMessageTime(message.createdAt);
-  const isBotMessage = message.senderId === '__chatbot__';
+  const isBotMessage = message.senderId === CHATBOT_SENDER_ID;
+  const isDeleted = Boolean(message.deleted);
+  const canReact = !isBotMessage && !isDeleted && Boolean(user?.id);
+  const canEdit = isOwn && canEditTextMessage(message, user?.id);
+  const canDelete = isOwn && canDeleteMessage(message, user?.id);
+  const [confirmMode, setConfirmMode] = useState<null | 'sendBot' | 'deleteMessage'>(null);
+  const confirmText = useMemo(() => (message.content || '').trim(), [message.content]);
 
   const bubbleClass = isOwn ? 'message-bubble-sent' : 'message-bubble-received';
   const metaClass = isOwn ? 'message-meta-sent' : 'message-meta-received';
@@ -33,16 +50,65 @@ export const MessageBubble = ({
 
   return (
     <div
-      className={`message-row flex px-4 py-0.5 ${isOwn ? 'justify-end' : 'justify-start'} ${
+      className={`message-row group flex px-4 py-0.5 ${isOwn ? 'justify-end' : 'justify-start'} ${
         highlighted ? 'message-search-highlight' : ''
       }`}
       data-message-id={message.messageId}
     >
-      <div className={`max-w-[min(85%,560px)] rounded-[1.35rem] px-4 py-3 shadow-sm ring-1 ring-black/5 ${bubbleClass}`}>
+      <div className={`relative max-w-[min(85%,560px)] rounded-[1.35rem] px-4 py-3 shadow-sm ring-1 ring-black/5 ${bubbleClass}`}>
+        {(canReact || canEdit || canDelete) && (
+          <div
+            className={`absolute -top-2 flex gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 ${
+              isOwn ? '-left-2 -translate-x-full' : '-right-2 translate-x-full'
+            }`}
+          >
+            {canReact && user?.id && (
+              <ReactionPickerButton
+                isOwn={isOwn}
+                onPick={(type: ReactionType) => toggleMessageReaction(message.messageId, type)}
+              />
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => startEditMessage(message.messageId)}
+                className="flex size-8 items-center justify-center rounded-full border border-[var(--discord-border)] bg-[var(--discord-panel-strong)] text-[var(--discord-text-muted)] shadow-sm hover:bg-[var(--discord-hover)] hover:text-[var(--discord-accent)]"
+                title="Chỉnh sửa"
+                aria-label="Chỉnh sửa tin nhắn"
+              >
+                <Pencil className="size-3.5" />
+              </button>
+            )}
+            {canDelete && (
+              <button
+                type="button"
+                onClick={() => setConfirmMode('deleteMessage')}
+                className="flex size-8 items-center justify-center rounded-full border border-[var(--discord-border)] bg-[var(--discord-panel-strong)] text-[var(--discord-text-muted)] shadow-sm hover:bg-[var(--discord-hover)] hover:text-red-400"
+                title="Xóa tin nhắn"
+                aria-label="Xóa tin nhắn"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            )}
+          </div>
+        )}
         {isBotMessage ? (
           <div className="mb-1 flex items-center justify-between gap-2">
             <div className="text-xs font-semibold text-[var(--discord-accent)]">ChatBot (chỉ bạn thấy)</div>
             <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!confirmText) return;
+                  setConfirmMode('sendBot');
+                }}
+                className="flex items-center gap-1 rounded-full border border-[var(--discord-border)] bg-[var(--discord-panel-strong)] px-2 py-1 text-xs font-semibold text-[var(--discord-accent)] shadow-sm hover:bg-[var(--discord-hover)]"
+                title="Gửi vào hội thoại"
+                aria-label="Gửi vào hội thoại"
+              >
+                <Send className="size-3.5" />
+                Gửi
+              </button>
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(message.content || '')}
@@ -68,17 +134,71 @@ export const MessageBubble = ({
         )}
         <MessageBody message={message} bodyClass={bodyClass} />
         <div className={`mt-2 flex items-center justify-end gap-1.5 ${metaClass}`}>
+          {message.edited && (
+            <span className="text-[10px] font-medium italic opacity-80">đã chỉnh sửa</span>
+          )}
           {showSeenReceipt && (
             <span className="text-[10px] font-medium opacity-90">Đã xem</span>
           )}
           <span>{time}</span>
         </div>
+        {canReact && user?.id && (
+          <MessageReactions
+            message={message}
+            currentUserId={user.id}
+            isOwn={isOwn}
+            onReact={toggleMessageReaction}
+          />
+        )}
       </div>
+
+      <ConfirmModal
+        open={confirmMode === 'sendBot'}
+        title="Gửi tin nhắn"
+        description="Bạn có chắc muốn gửi nội dung này vào hội thoại hiện tại?"
+        confirmLabel="Gửi"
+        onClose={() => setConfirmMode(null)}
+        onConfirm={() => {
+          const text = confirmText;
+          if (!text) {
+            setConfirmMode(null);
+            return;
+          }
+          void (async () => {
+            const ok = await sendBotDraft(text);
+            if (ok) dismissBotMessage(message.messageId);
+            setConfirmMode(null);
+          })();
+        }}
+      />
+
+      <ConfirmModal
+        open={confirmMode === 'deleteMessage'}
+        title="Xóa tin nhắn"
+        description="Xóa tin nhắn này? Mọi thành viên sẽ thấy tin đã bị xóa."
+        confirmLabel="Xóa"
+        danger
+        onClose={() => setConfirmMode(null)}
+        onConfirm={() => {
+          void (async () => {
+            await deleteMessage(message.messageId);
+            setConfirmMode(null);
+          })();
+        }}
+      />
     </div>
   );
 };
 
 function MessageBody({ message, bodyClass }: { message: ChatMessage; bodyClass: string }) {
+  if (message.deleted) {
+    return (
+      <p className={`text-[15px] italic leading-relaxed opacity-60 ${bodyClass}`}>
+        Tin nhắn đã bị xóa
+      </p>
+    );
+  }
+
   const content = message.content || '';
   const isFileMessage =
     message.type === 'FILE' || Boolean(parseFileMessageContent(content));

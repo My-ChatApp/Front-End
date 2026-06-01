@@ -3,7 +3,11 @@ import { profileService } from '@/services/profileService';
 import { UserProfile } from '@/types';
 
 export type UserProfileSnapshot = {
+  /** Resolved label: displayName, else username, else email */
   displayName: string | null;
+  fullName: string | null;
+  username: string | null;
+  email: string | null;
   avatarUrl: string | null;
   online: boolean;
 };
@@ -25,17 +29,15 @@ function subscribeProfile(userId: string, listener: () => void): () => void {
   };
 }
 
-function resolveDisplayName(data: {
-  displayName?: string;
-  username?: string;
-  email?: string;
-}): string | null {
-  return data.displayName?.trim() || data.username?.trim() || data.email?.trim() || null;
-}
-
 function snapshotFromApi(data: UserProfile): UserProfileSnapshot {
+  const fullName = data.displayName?.trim() || null;
+  const username = data.username?.trim() || null;
+  const email = data.email?.trim() || null;
   return {
-    displayName: resolveDisplayName(data),
+    fullName,
+    username,
+    email,
+    displayName: fullName || username || email || null,
     avatarUrl: data.avatarUrl?.trim() || null,
     online: Boolean(data.online),
   };
@@ -60,12 +62,14 @@ export function setCachedUserPresence(
   patch: Partial<Pick<UserProfileSnapshot, 'online' | 'displayName'>>
 ): void {
   if (!userId) return;
-  const existing = profileCache.get(userId) ?? {
-    displayName: null,
-    avatarUrl: null,
-    online: false,
-  };
-  profileCache.set(userId, { ...existing, ...patch });
+  const existing = profileCache.get(userId) ?? emptySnapshot();
+  const next = { ...existing, ...patch };
+  if (patch.displayName !== undefined) {
+    next.fullName = patch.displayName;
+    next.displayName =
+      patch.displayName || existing.username || existing.email || null;
+  }
+  profileCache.set(userId, next);
   notifyProfileListeners(userId);
 }
 
@@ -82,12 +86,12 @@ export function prefetchUserDisplayName(userId: string): void {
 export function setCachedUserDisplayName(userId: string, name: string): void {
   const trimmed = name.trim();
   if (!userId || !trimmed) return;
-  const existing = profileCache.get(userId) ?? {
-    displayName: null,
-    avatarUrl: null,
-    online: false,
-  };
-  profileCache.set(userId, { ...existing, displayName: trimmed });
+  const existing = profileCache.get(userId) ?? emptySnapshot();
+  profileCache.set(userId, {
+    ...existing,
+    fullName: trimmed,
+    displayName: trimmed || existing.username || existing.email || null,
+  });
   notifyProfileListeners(userId);
 }
 
@@ -144,8 +148,22 @@ export function useUserProfile(userId: string | undefined): UserProfileSnapshot 
 
   return {
     displayName: snap?.displayName ?? null,
+    fullName: snap?.fullName ?? null,
+    username: snap?.username ?? null,
+    email: snap?.email ?? null,
     avatarUrl: snap?.avatarUrl ?? null,
     online: snap?.online ?? false,
     loading,
+  };
+}
+
+function emptySnapshot(): UserProfileSnapshot {
+  return {
+    displayName: null,
+    fullName: null,
+    username: null,
+    email: null,
+    avatarUrl: null,
+    online: false,
   };
 }
