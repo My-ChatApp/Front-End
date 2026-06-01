@@ -29,7 +29,7 @@ export const helpers = {
     return text.substring(0, maxLength) + '...';
   },
 
-  debounce: <T extends (...args: any[]) => any>(
+  debounce: <T extends (...args: unknown[]) => unknown>(
     func: T,
     delay: number
   ): ((...args: Parameters<T>) => void) => {
@@ -40,7 +40,7 @@ export const helpers = {
     };
   },
 
-  throttle: <T extends (...args: any[]) => any>(
+  throttle: <T extends (...args: unknown[]) => unknown>(
     func: T,
     limit: number
   ): ((...args: Parameters<T>) => void) => {

@@ -1,7 +1,7 @@
 import { Hash } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getInitials } from '@/utils/chatUtils';
-import { DEFAULT_AVATAR_URL, resolveAvatarUrl } from '@/utils/profileUtils';
+import { resolveAvatarUrl } from '@/utils/profileUtils';
 
 type ChatAvatarSize = 'sm' | 'md' | 'lg';
 
@@ -90,5 +90,3 @@ export const ChatAvatar = ({
     </div>
   );
 };
-
-export { resolveAvatarUrl };

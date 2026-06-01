@@ -18,8 +18,10 @@ import {
   MessagesPageResponse,
   UpdateConversationRequest,
 } from '@/types';
+import { apiUrl } from '@/config/env';
 import { chatService } from '@/services/chatService';
 import { chatSocket } from '@/services/chatSocket';
+import { getStoredToken } from '@/services/httpClient';
 import { uploadFileViaPresign } from '@/services/uploadMedia';
 import { setCachedUserPresence } from '@/hooks/useUserProfile';
 import {
@@ -79,6 +81,19 @@ interface ChatContextValue {
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
+
+const sortMessages = (list: ChatMessage[]) =>
+  [...list].sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return ta - tb;
+  });
+
+const mergeUnique = (older: ChatMessage[], current: ChatMessage[]) => {
+  const ids = new Set(current.map((m) => m.messageId));
+  const prepend = older.filter((m) => !ids.has(m.messageId));
+  return sortMessages([...prepend, ...current]);
+};
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const { user, isAuthenticated } = useAuth();
@@ -167,19 +182,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       setIsLoadingConversations(false);
     }
   }, [userId]);
-
-  const sortMessages = (list: ChatMessage[]) =>
-    [...list].sort((a, b) => {
-      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return ta - tb;
-    });
-
-  const mergeUnique = (older: ChatMessage[], current: ChatMessage[]) => {
-    const ids = new Set(current.map((m) => m.messageId));
-    const prepend = older.filter((m) => !ids.has(m.messageId));
-    return sortMessages([...prepend, ...current]);
-  };
 
   const bumpConversationPreview = useCallback(
     (msg: ChatMessage, serverConv?: Conversation) => {
@@ -644,9 +646,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             .map((m) => ({ role: String(m.senderId) === String(userId) ? 'user' : 'assistant', content: m.content || '' }));
 
           try {
-            const res = await fetch('http://localhost:8088/api/chat', {
+            const token = getStoredToken();
+            const res = await fetch(apiUrl('/api/agent/chat'), {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
               body: JSON.stringify({ message: trimmed, history }),
             });
             if (!res.ok) {
