@@ -3,7 +3,7 @@ import { UserGender } from '@/types';
 /** Giới hạn khớp với backend (CreateUserRequest, DB schema, media-service). */
 export const VALIDATION_LIMITS = {
   usernameMax: 50,
-  passwordMin: 6,
+  passwordMin: 8,
   passwordMax: 100,
   displayNameMax: 100,
   phoneMax: 20,
@@ -41,6 +41,29 @@ export function validateEmail(value: string): string | null {
   return null;
 }
 
+const PASSWORD_COMPLEXITY_REGEX = {
+  upper: /[A-Z]/,
+  lower: /[a-z]/,
+  digit: /\d/,
+  special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/,
+};
+
+export function validatePasswordComplexity(value: string): string | null {
+  if (!PASSWORD_COMPLEXITY_REGEX.upper.test(value)) {
+    return 'Mật khẩu phải có ít nhất 1 chữ hoa';
+  }
+  if (!PASSWORD_COMPLEXITY_REGEX.lower.test(value)) {
+    return 'Mật khẩu phải có ít nhất 1 chữ thường';
+  }
+  if (!PASSWORD_COMPLEXITY_REGEX.digit.test(value)) {
+    return 'Mật khẩu phải có ít nhất 1 chữ số';
+  }
+  if (!PASSWORD_COMPLEXITY_REGEX.special.test(value)) {
+    return 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt';
+  }
+  return null;
+}
+
 export function validatePassword(value: string): string | null {
   const req = required(value, 'Mật khẩu');
   if (req) return req;
@@ -50,7 +73,7 @@ export function validatePassword(value: string): string | null {
   if (value.length > VALIDATION_LIMITS.passwordMax) {
     return `Mật khẩu tối đa ${VALIDATION_LIMITS.passwordMax} ký tự`;
   }
-  return null;
+  return validatePasswordComplexity(value);
 }
 
 export function validateLoginPassword(value: string): string | null {
