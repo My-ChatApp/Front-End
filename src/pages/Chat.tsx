@@ -33,11 +33,13 @@ export const Chat = () => {
     return () => mq.removeEventListener('change', update);
   }, []);
 
+  const selectedConversationId = selectedConversation?.id;
+
   useEffect(() => {
-    if (isMobile && selectedConversation) {
+    if (isMobile && selectedConversationId) {
       setMobileView('chat');
     }
-  }, [isMobile, selectedConversation?.id]);
+  }, [isMobile, selectedConversationId]);
 
   const showMobileNavPanel = isMobile && activeNavView !== 'chat';
 

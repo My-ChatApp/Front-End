@@ -32,10 +32,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     error: null,
   });
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
   const checkAuth = async () => {
     const token = authService.getToken();
     if (!token) {
@@ -79,6 +75,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }));
     }
   };
+
+  useEffect(() => {
+    void checkAuth();
+  }, []);
 
   const applySession = (accessToken: string, emailFallback: string) => {
     authService.setToken(accessToken);

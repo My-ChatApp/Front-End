@@ -35,7 +35,9 @@ export const Login = () => {
     try {
       await login({ email: email.trim(), password });
       navigate('/chat');
-    } catch (err) {}
+    } catch {
+      // AuthContext sets error state
+    }
   };
 
   return (

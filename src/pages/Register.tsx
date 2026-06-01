@@ -55,7 +55,9 @@ export const Register = () => {
         confirmPassword: formData.confirmPassword,
       });
       navigate('/chat');
-    } catch (err) {}
+    } catch {
+      // AuthContext sets error state
+    }
   };
 
   return (

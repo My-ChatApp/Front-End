@@ -11,7 +11,6 @@ import {
 import { getStoredToken } from './httpClient';
 import { toBackendMessageType } from './chatService';
 
-type MessageHandler = (message: ChatMessage) => void;
 type RealtimeHandler = (payload: ChatMessage | ChatRealtimeEnvelope) => void;
 type InboxHandler = (event: ChatInboxEvent) => void;
 

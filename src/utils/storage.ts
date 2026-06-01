@@ -1,5 +1,5 @@
 export const storage = {
-  setItem: (key: string, value: any) => {
+  setItem: (key: string, value: unknown) => {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
