@@ -3,6 +3,7 @@ import { MessageCircle } from 'lucide-react';
 import { useAuth } from '@/context';
 import { useChat } from '@/context/ChatContext';
 import {
+  CHATBOT_SENDER_ID,
   getPeerMember,
   isLatestOwnMessageSeen,
 } from '@/utils/chatUtils';
@@ -27,7 +28,9 @@ export const MessageList = () => {
     selectedConversation,
     highlightMessageId,
     pendingScrollMessageId,
+    acknowledgePendingScroll,
     detailMembers,
+    scrollToBottomTick,
   } = useChat();
   const isDraftPrivate = Boolean(pendingPrivateRecipientId && !selectedConversation);
   const isPrivateChat = selectedConversation?.type === 'PRIVATE';
@@ -37,6 +40,14 @@ export const MessageList = () => {
   const pendingScrollRestoreRef = useRef<{ height: number; top: number } | null>(null);
   const initialScrollPendingRef = useRef(true);
   const userScrolledUpRef = useRef(false);
+  const stickToBottomRef = useRef(true);
+  const pendingJumpHandledRef = useRef<string | null>(null);
+
+  const scrollToEnd = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    userScrolledUpRef.current = false;
+    stickToBottomRef.current = true;
+    endRef.current?.scrollIntoView({ behavior });
+  }, []);
 
   const lastOwnMessageId = useMemo(() => {
     if (!user?.id) return null;
@@ -78,12 +89,63 @@ export const MessageList = () => {
     if (el.scrollTop <= SCROLL_UP_THRESHOLD_PX) {
       userScrolledUpRef.current = true;
     }
+    stickToBottomRef.current = isNearBottom(el);
   }, []);
 
   useEffect(() => {
     initialScrollPendingRef.current = true;
     userScrolledUpRef.current = false;
-  }, [selectedConversation?.id]);
+    stickToBottomRef.current = true;
+  }, [selectedConversation?.id, pendingPrivateRecipientId]);
+
+  const scrollContainerToBottom = useCallback((el: HTMLDivElement) => {
+    el.scrollTop = el.scrollHeight;
+    userScrolledUpRef.current = false;
+    stickToBottomRef.current = true;
+  }, []);
+
+  useLayoutEffect(() => {
+    if (isLoadingMessages || pendingScrollMessageId) return;
+    if (!initialScrollPendingRef.current) return;
+
+    const el = scrollRef.current;
+    if (!el) return;
+
+    scrollContainerToBottom(el);
+    initialScrollPendingRef.current = false;
+
+    const raf = requestAnimationFrame(() => {
+      if (scrollRef.current) scrollContainerToBottom(scrollRef.current);
+      requestAnimationFrame(() => {
+        if (scrollRef.current) scrollContainerToBottom(scrollRef.current);
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [
+    isLoadingMessages,
+    messages,
+    selectedConversation?.id,
+    pendingPrivateRecipientId,
+    pendingScrollMessageId,
+    scrollContainerToBottom,
+  ]);
+
+  useEffect(() => {
+    if (!scrollToBottomTick) return;
+    scrollToEnd('smooth');
+  }, [scrollToBottomTick, scrollToEnd]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || pendingScrollMessageId || isLoadingOlder) return;
+
+    const ro = new ResizeObserver(() => {
+      if (!stickToBottomRef.current) return;
+      endRef.current?.scrollIntoView({ behavior: 'auto' });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [pendingScrollMessageId, isLoadingOlder, selectedConversation?.id]);
 
   useLayoutEffect(() => {
     const pending = pendingScrollRestoreRef.current;
@@ -94,6 +156,31 @@ export const MessageList = () => {
     el.scrollTop = pending.top + delta;
     pendingScrollRestoreRef.current = null;
   }, [messages]);
+
+  useLayoutEffect(() => {
+    if (!pendingScrollMessageId) return;
+    const root = scrollRef.current;
+    if (!root) return;
+
+    if (pendingJumpHandledRef.current === pendingScrollMessageId) return;
+
+    const target = root.querySelector<HTMLElement>(
+      `[data-message-id="${pendingScrollMessageId}"]`
+    );
+    if (!target) return;
+
+    userScrolledUpRef.current = true;
+    initialScrollPendingRef.current = false;
+    pendingJumpHandledRef.current = pendingScrollMessageId;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    const t = window.setTimeout(() => {
+      // Keep the "jump lock" briefly so bottom auto-scroll doesn't win.
+      acknowledgePendingScroll();
+      pendingJumpHandledRef.current = null;
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [messages, pendingScrollMessageId, acknowledgePendingScroll]);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -119,14 +206,23 @@ export const MessageList = () => {
 
     if (initialScrollPendingRef.current && !isLoadingMessages) {
       initialScrollPendingRef.current = false;
-      endRef.current?.scrollIntoView({ behavior: 'auto' });
+      scrollToEnd('auto');
+      return;
+    }
+
+    const last = messages[messages.length - 1];
+    const isOwnLast =
+      last && user?.id && String(last.senderId) === String(user.id);
+
+    if (last?.senderId === CHATBOT_SENDER_ID || isOwnLast) {
+      scrollToEnd('smooth');
       return;
     }
 
     if (isNearBottom(el)) {
-      endRef.current?.scrollIntoView({ behavior: 'smooth' });
+      scrollToEnd('smooth');
     }
-  }, [messages, isLoadingMessages, pendingScrollMessageId, isLoadingOlder]);
+  }, [messages, isLoadingMessages, pendingScrollMessageId, isLoadingOlder, user?.id, scrollToEnd]);
 
   if (isLoadingMessages) {
     return (

@@ -1,6 +1,7 @@
 import {
   AddConversationMemberRequest,
   ApiResponse,
+  ChatMessage,
   Conversation,
   ConversationMember,
   CreateConversationRequest,
@@ -11,6 +12,7 @@ import {
   SendMessageRequest,
   UpdateConversationRequest,
 } from '@/types';
+import type { ReactionType } from '@/utils/reactions';
 import { mimeTypeToFileType } from '@/utils/chatUtils';
 import { apiUrl } from '@/config/env';
 import { createHttpClient } from './httpClient';
@@ -67,6 +69,19 @@ export const chatService = {
     const response = await conversationClient.get<ApiResponse<MessagesPageResponse>>(
       `/${conversationId}/messages`,
       { params: { userId, limit, ...(before ? { before } : {}) } }
+    );
+    return response.data;
+  },
+
+  getMessagesAround: async (
+    conversationId: string,
+    userId: string,
+    anchorMessageId: string,
+    limit = 40
+  ): Promise<ApiResponse<MessagesPageResponse>> => {
+    const response = await conversationClient.get<ApiResponse<MessagesPageResponse>>(
+      `/${conversationId}/messages/around`,
+      { params: { userId, anchor: anchorMessageId, limit } }
     );
     return response.data;
   },
@@ -151,6 +166,58 @@ export const chatService = {
     const response = await conversationClient.get<ApiResponse<MessageSearchResult[]>>(
       `/${conversationId}/messages/search`,
       { params: { userId, q, limit } }
+    );
+    return response.data;
+  },
+
+  setMessageReaction: async (
+    conversationId: string,
+    messageId: string,
+    userId: string,
+    reactionType: ReactionType
+  ): Promise<ApiResponse<ChatMessage>> => {
+    const response = await conversationClient.put<ApiResponse<ChatMessage>>(
+      `/${conversationId}/messages/${messageId}/reactions`,
+      { reactionType },
+      { params: { userId } }
+    );
+    return response.data;
+  },
+
+  removeMessageReaction: async (
+    conversationId: string,
+    messageId: string,
+    userId: string
+  ): Promise<ApiResponse<ChatMessage>> => {
+    const response = await conversationClient.delete<ApiResponse<ChatMessage>>(
+      `/${conversationId}/messages/${messageId}/reactions`,
+      { params: { userId } }
+    );
+    return response.data;
+  },
+
+  deleteMessage: async (
+    conversationId: string,
+    messageId: string,
+    userId: string
+  ): Promise<ApiResponse<ChatMessage>> => {
+    const response = await conversationClient.delete<ApiResponse<ChatMessage>>(
+      `/${conversationId}/messages/${messageId}`,
+      { params: { userId } }
+    );
+    return response.data;
+  },
+
+  updateMessage: async (
+    conversationId: string,
+    messageId: string,
+    userId: string,
+    content: string
+  ): Promise<ApiResponse<ChatMessage>> => {
+    const response = await conversationClient.patch<ApiResponse<ChatMessage>>(
+      `/${conversationId}/messages/${messageId}`,
+      { content },
+      { params: { userId } }
     );
     return response.data;
   },

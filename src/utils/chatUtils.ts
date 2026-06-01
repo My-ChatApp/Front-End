@@ -33,6 +33,46 @@ export type FileMediaKind = 'image' | 'video' | 'audio' | 'document' | 'file';
 
 export const MAX_FILES_PER_MESSAGE = 5;
 
+/** Local-only ChatBot replies in the message list (not persisted on chat-service). */
+export const CHATBOT_SENDER_ID = '__chatbot__';
+
+export type AgentHistoryTurn = { role: 'user' | 'assistant'; content: string };
+
+/** Map UI messages to Groq roles: you = user, prior ChatBot = assistant, others = labeled user. */
+export function toAgentHistoryTurn(
+  message: ChatMessage,
+  currentUserId: string
+): AgentHistoryTurn | null {
+  if (message.deleted) return null;
+
+  const raw = message.content?.trim() ?? '';
+  if (!raw) return null;
+
+  if (message.senderId === CHATBOT_SENDER_ID) {
+    return { role: 'assistant', content: raw };
+  }
+  if (String(message.senderId) === String(currentUserId)) {
+    return { role: 'user', content: raw };
+  }
+  return { role: 'user', content: `[Thành viên khác]: ${raw}` };
+}
+
+/** Own TEXT messages (not bot / file / deleted) may be edited via API. */
+export function canEditTextMessage(message: ChatMessage, currentUserId?: string): boolean {
+  if (!currentUserId || message.senderId === CHATBOT_SENDER_ID) return false;
+  if (String(message.senderId) !== String(currentUserId)) return false;
+  if (message.deleted) return false;
+  if (message.type !== 'TEXT') return false;
+  if (message.content != null && parseFileMessageContent(message.content)) return false;
+  return true;
+}
+
+export function canDeleteMessage(message: ChatMessage, currentUserId?: string): boolean {
+  if (!currentUserId || message.senderId === CHATBOT_SENDER_ID) return false;
+  if (String(message.senderId) !== String(currentUserId)) return false;
+  return !message.deleted;
+}
+
 export type ResolvedFileMedia = { kind: FileMediaKind; url: string; fileName?: string };
 
 /** Map MIME to backend attachment fileType (IMAGE | VIDEO | …). */

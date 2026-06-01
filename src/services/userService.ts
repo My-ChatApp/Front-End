@@ -21,4 +21,11 @@ export const userService = {
     const response = await userClient.get<ApiResponse<AppUser>>(`/${id}`);
     return response.data;
   },
+
+  search: async (q: string, excludeUserId?: string): Promise<ApiResponse<AppUser[]>> => {
+    const response = await userClient.get<ApiResponse<AppUser[]>>('/search', {
+      params: { q: q.trim(), excludeUserId, limit: 20 },
+    });
+    return response.data;
+  },
 };
