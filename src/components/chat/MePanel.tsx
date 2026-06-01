@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/context';
 import { useChat } from '@/context/ChatContext';
 import { Alert } from '@/components/Alert';
+import { getUserFacingMessage, sanitizeDisplayMessage } from '@/utils/userMessage';
 import { FieldError } from '@/components/FieldError';
 import { setCachedUserDisplayName } from '@/hooks/useUserDisplayName';
 import { profileService } from '@/services/profileService';
@@ -262,11 +263,12 @@ export const MePanel = () => {
           keepEditing: isEditing,
         });
       } else {
-        setStatusMessage(response.message || 'Đã cập nhật ảnh đại diện');
+        setStatusMessage(
+          sanitizeDisplayMessage(response.message, 'Đã cập nhật ảnh đại diện')
+        );
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
-      setErrorMessage(e.response?.data?.message || e.message || 'Không thể tải ảnh lên');
+      setErrorMessage(getUserFacingMessage(err, 'Không thể tải ảnh lên'));
       if (avatarPreview?.startsWith('blob:')) {
         URL.revokeObjectURL(avatarPreview);
       }
@@ -333,7 +335,7 @@ export const MePanel = () => {
     if (!opts?.keepEditing) {
       setIsEditing(false);
     }
-    setStatusMessage(message || 'Cập nhật thành công');
+    setStatusMessage(sanitizeDisplayMessage(message, 'Cập nhật thành công'));
     setErrorMessage(null);
   };
 
@@ -360,12 +362,11 @@ export const MePanel = () => {
       if (response.data) {
         applyProfileResponse(response.data as UserProfile, response.message);
       } else {
-        setStatusMessage(response.message || 'Cập nhật thành công');
+        setStatusMessage(sanitizeDisplayMessage(response.message, 'Cập nhật thành công'));
         setIsEditing(false);
       }
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
-      setErrorMessage(e.response?.data?.message || e.message || 'Không thể cập nhật profile');
+      setErrorMessage(getUserFacingMessage(err, 'Không thể cập nhật hồ sơ'));
     } finally {
       setIsSaving(false);
     }

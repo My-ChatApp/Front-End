@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context';
-import { Alert, FieldError, LoadingSpinner } from '@/components';
+import { Alert, ButtonSpinner, FieldError } from '@/components';
 import { FieldErrors, inputErrorClass, validateRegisterForm } from '@/utils/validation';
 import { UserPlus, User, Mail, Lock, MessageCircle, ShieldCheck } from 'lucide-react';
 
@@ -22,7 +22,7 @@ export const Register = () => {
   >({});
   const [localError, setLocalError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { register, isLoading, error, clearError } = useAuth();
+  const { register, isSubmitting, error, clearError } = useAuth();
 
   const displayError = localError || error;
 
@@ -54,7 +54,7 @@ export const Register = () => {
         password: formData.password,
         confirmPassword: formData.confirmPassword,
       });
-      navigate('/chat');
+      navigate('/verify-otp', { state: { email: formData.email.trim() } });
     } catch {
       // AuthContext sets error state
     }
@@ -163,10 +163,10 @@ export const Register = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
-              className="app-button-primary w-full py-4 mt-4 rounded-2xl text-lg disabled:opacity-60"
+              disabled={isSubmitting}
+              className="app-button-primary w-full min-h-[3.25rem] py-4 mt-4 rounded-2xl text-lg disabled:opacity-60"
             >
-              {isLoading ? <LoadingSpinner /> : <><UserPlus size={20} /> Đăng ký tài khoản</>}
+              {isSubmitting ? <ButtonSpinner /> : <><UserPlus size={20} /> Đăng ký tài khoản</>}
             </button>
           </form>
 

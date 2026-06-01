@@ -7,10 +7,9 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
 
-  // Sử dụng spinner giao diện mới
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <div className="app-page-shell min-h-[calc(100vh-80px)] flex items-center justify-center">
         <LoadingSpinner />

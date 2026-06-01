@@ -2,11 +2,19 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { AuthState, User, LoginRequest, RegisterRequest } from '@/types';
 import { authService } from '@/services';
 import { decodeJwtPayload, getUserIdFromToken } from '@/utils/jwt';
-import { validateLoginForm, validateRegisterForm } from '@/utils/validation';
+import { getUserFacingMessage } from '@/utils/userMessage';
+import { validateEmail, validateLoginForm, validateRegisterForm } from '@/utils/validation';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
+  verifyRegistrationOtp: (email: string, otp: string) => Promise<void>;
+  resendRegistrationOtp: (email: string) => Promise<void>;
+  sendLoginOtp: (email: string) => Promise<void>;
+  resendLoginOtp: (email: string) => Promise<void>;
+  loginWithOtp: (email: string, otp: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
   checkAuth: () => Promise<void>;
@@ -28,14 +36,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user: null,
     token: null,
     isAuthenticated: false,
-    isLoading: true,
+    isInitializing: true,
+    isSubmitting: false,
     error: null,
   });
 
   const checkAuth = async () => {
     const token = authService.getToken();
     if (!token) {
-      setState((prev) => ({ ...prev, isLoading: false }));
+      setState((prev) => ({ ...prev, isInitializing: false }));
       return;
     }
 
@@ -51,14 +60,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           token,
           isAuthenticated: true,
           user,
-          isLoading: false,
+          isInitializing: false,
           error: null,
         }));
       } else {
         authService.logout();
         setState((prev) => ({
           ...prev,
-          isLoading: false,
+          isInitializing: false,
           token: null,
           isAuthenticated: false,
           user: null,
@@ -68,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       authService.logout();
       setState((prev) => ({
         ...prev,
-        isLoading: false,
+        isInitializing: false,
         token: null,
         isAuthenticated: false,
         user: null,
@@ -88,38 +97,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       token: accessToken,
       isAuthenticated: true,
       user,
-      isLoading: false,
+      isSubmitting: false,
       error: null,
     }));
+  };
+
+  const runAuthAction = async (
+    action: () => Promise<void>,
+    fallbackError: string
+  ): Promise<void> => {
+    setState((prev) => ({ ...prev, isSubmitting: true, error: null }));
+    try {
+      await action();
+      setState((prev) => ({ ...prev, isSubmitting: false, error: null }));
+    } catch (error: unknown) {
+      const errorMessage = getUserFacingMessage(error, fallbackError);
+      setState((prev) => ({
+        ...prev,
+        isSubmitting: false,
+        error: errorMessage,
+      }));
+      throw error;
+    }
   };
 
   const login = async (credentials: LoginRequest) => {
     const validation = validateLoginForm(credentials.email, credentials.password);
     if (!validation.valid) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: validation.message,
-      }));
+      setState((prev) => ({ ...prev, error: validation.message }));
       throw new Error(validation.message);
     }
 
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
+    setState((prev) => ({ ...prev, isSubmitting: true, error: null }));
     try {
       const response = await authService.login(credentials);
+      if (!response?.accessToken) {
+        throw new Error('Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.');
+      }
       applySession(response.accessToken, credentials.email);
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } }; message?: string };
-      const errorMessage =
-        err.response?.data?.message || err.message || 'Login failed';
-
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: errorMessage,
-      }));
-
+      const errorMessage = getUserFacingMessage(
+        error,
+        'Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.'
+      );
+      setState((prev) => ({ ...prev, isSubmitting: false, error: errorMessage }));
       throw error;
     }
   };
@@ -127,32 +148,85 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (data: RegisterRequest) => {
     const validation = validateRegisterForm(data);
     if (!validation.valid) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: validation.message,
-      }));
+      setState((prev) => ({ ...prev, error: validation.message }));
       throw new Error(validation.message);
     }
 
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    await runAuthAction(async () => {
+      await authService.register(data);
+    }, 'Đăng ký thất bại. Vui lòng thử lại.');
+  };
 
+  const verifyRegistrationOtp = async (email: string, otp: string) => {
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setState((prev) => ({ ...prev, error: emailError }));
+      throw new Error(emailError);
+    }
+
+    setState((prev) => ({ ...prev, isSubmitting: true, error: null }));
     try {
-      const response = await authService.register(data);
-      applySession(response.accessToken, data.email);
+      const response = await authService.verifyRegistrationOtp(email, otp);
+      if (!response?.accessToken) {
+        throw new Error('Xác thực OTP thất bại. Vui lòng kiểm tra mã hoặc gửi lại.');
+      }
+      applySession(response.accessToken, email);
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } }; message?: string };
-      const errorMessage =
-        err.response?.data?.message || err.message || 'Registration failed';
-
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: errorMessage,
-      }));
-
+      const errorMessage = getUserFacingMessage(
+        error,
+        'Xác thực OTP thất bại. Vui lòng kiểm tra mã hoặc gửi lại.'
+      );
+      setState((prev) => ({ ...prev, isSubmitting: false, error: errorMessage }));
       throw error;
     }
+  };
+
+  const resendRegistrationOtp = async (email: string) => {
+    await runAuthAction(async () => {
+      await authService.resendRegistrationOtp(email);
+    }, 'Không gửi lại được mã OTP. Vui lòng thử lại sau.');
+  };
+
+  const sendLoginOtp = async (email: string) => {
+    await runAuthAction(async () => {
+      await authService.sendLoginOtp(email);
+    }, 'Không gửi được mã OTP đăng nhập. Vui lòng thử lại.');
+  };
+
+  const resendLoginOtp = async (email: string) => {
+    await runAuthAction(async () => {
+      await authService.resendLoginOtp(email);
+    }, 'Không gửi lại được mã OTP. Vui lòng thử lại sau.');
+  };
+
+  const loginWithOtp = async (email: string, otp: string) => {
+    setState((prev) => ({ ...prev, isSubmitting: true, error: null }));
+    try {
+      const response = await authService.loginWithOtp(email, otp);
+      if (!response?.accessToken) {
+        throw new Error('Đăng nhập bằng OTP thất bại. Vui lòng kiểm tra mã OTP.');
+      }
+      applySession(response.accessToken, email);
+    } catch (error: unknown) {
+      const errorMessage = getUserFacingMessage(
+        error,
+        'Đăng nhập bằng OTP thất bại. Vui lòng kiểm tra mã OTP.'
+      );
+      setState((prev) => ({ ...prev, isSubmitting: false, error: errorMessage }));
+      throw error;
+    }
+  };
+
+  const forgotPassword = async (email: string) => {
+    await runAuthAction(async () => {
+      await authService.forgotPassword(email);
+    }, 'Không gửi được yêu cầu đặt lại mật khẩu. Vui lòng thử lại.');
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    await runAuthAction(async () => {
+      await authService.resetPassword(token, newPassword);
+    }, 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.');
   };
 
   const logout = () => {
@@ -161,7 +235,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user: null,
       token: null,
       isAuthenticated: false,
-      isLoading: false,
+      isInitializing: false,
+      isSubmitting: false,
       error: null,
     });
   };
@@ -176,6 +251,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ...state,
         login,
         register,
+        verifyRegistrationOtp,
+        resendRegistrationOtp,
+        sendLoginOtp,
+        resendLoginOtp,
+        loginWithOtp,
+        forgotPassword,
+        resetPassword,
         logout,
         clearError,
         checkAuth,

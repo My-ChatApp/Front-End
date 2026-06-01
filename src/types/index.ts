@@ -8,7 +8,10 @@ export interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
+  /** Chỉ true khi đang checkAuth lúc mở app — dùng cho FullScreenLoader / ProtectedRoute */
+  isInitializing: boolean;
+  /** True khi đang gọi API đăng nhập/đăng ký/OTP — không unmount toàn app */
+  isSubmitting: boolean;
   error: string | null;
 }
 

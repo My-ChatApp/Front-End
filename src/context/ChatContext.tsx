@@ -30,6 +30,7 @@ import {
   mergeConversationFromInbox,
   zeroUnreadForCurrentUser,
 } from '@/utils/chatUtils';
+import { getUserFacingMessage, sanitizeDisplayMessage } from '@/utils/userMessage';
 import { useAuth } from './AuthContext';
 
 export type ChatNavView = 'chat' | 'friends' | 'notifications' | 'me';
@@ -177,7 +178,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         );
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không tải được hội thoại');
+      setError(getUserFacingMessage(e, 'Không tải được hội thoại'));
     } finally {
       setIsLoadingConversations(false);
     }
@@ -470,7 +471,9 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    chatSocket.setErrorHandler((err) => setError(err));
+    chatSocket.setErrorHandler((err) =>
+      setError(sanitizeDisplayMessage(err, 'Kết nối trò chuyện thất bại'))
+    );
 
     chatSocket
       .connect(
@@ -488,7 +491,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         },
         (err) => {
           setSocketConnected(false);
-          setError(err);
+          setError(sanitizeDisplayMessage(err, 'Không kết nối được máy chủ trò chuyện'));
         }
       )
       .catch(() => setSocketConnected(false));
@@ -543,7 +546,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           setHasMoreOlder(Boolean(page.hasMore));
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Không tải được tin nhắn');
+        setError(getUserFacingMessage(e, 'Không tải được tin nhắn'));
       } finally {
         setIsLoadingMessages(false);
       }
@@ -556,7 +559,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           }
           subscribeToConversation(conv.id);
         } catch (e) {
-          setError(e instanceof Error ? e.message : 'WebSocket chưa kết nối');
+          setError(getUserFacingMessage(e, 'WebSocket chưa kết nối'));
         }
       })();
 
@@ -612,7 +615,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         setHasMoreOlder(page.messages.length === 0 ? false : page.hasMore);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không tải được tin cũ hơn');
+      setError(getUserFacingMessage(e, 'Không tải được tin cũ hơn'));
     } finally {
       setIsLoadingOlder(false);
     }
@@ -628,7 +631,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         try {
           conv = await ensurePrivateConversation(pendingPrivateRecipientId);
         } catch (e) {
-          setError(e instanceof Error ? e.message : 'Không tạo được hội thoại');
+          setError(getUserFacingMessage(e, 'Không tạo được hội thoại'));
           return false;
         }
       }
@@ -675,7 +678,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             setPendingPrivateRecipientId(null);
             return true;
           } catch (e) {
-            setError(e instanceof Error ? e.message : 'Gọi ChatBot thất bại');
+            setError(getUserFacingMessage(e, 'Gọi ChatBot thất bại'));
             return false;
           }
         }
@@ -691,7 +694,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         setPendingPrivateRecipientId(null);
         return true;
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Gửi tin nhắn thất bại');
+        setError(getUserFacingMessage(e, 'Gửi tin nhắn thất bại'));
         return false;
       } finally {
         setIsSending(false);
@@ -720,7 +723,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         try {
           conv = await ensurePrivateConversation(pendingPrivateRecipientId);
         } catch (e) {
-          setError(e instanceof Error ? e.message : 'Không tạo được hội thoại');
+          setError(getUserFacingMessage(e, 'Không tạo được hội thoại'));
           return;
         }
       }
@@ -741,7 +744,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         chatSocket.sendMessage(payload);
         setPendingPrivateRecipientId(null);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Gửi file thất bại');
+        setError(getUserFacingMessage(e, 'Gửi file thất bại'));
       } finally {
         setIsSending(false);
       }
@@ -773,7 +776,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         await selectConversation(res.data);
         return res.data;
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Tạo nhóm thất bại');
+        setError(getUserFacingMessage(e, 'Tạo nhóm thất bại'));
         return null;
       }
     },
@@ -818,7 +821,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
           setDetailMembers(membersRes.data);
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Không tải được chi tiết hội thoại');
+        setError(getUserFacingMessage(e, 'Không tải được chi tiết hội thoại'));
       } finally {
         setIsRefreshingDetail(false);
       }
@@ -839,7 +842,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         await loadConversations();
         return true;
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Cập nhật thất bại');
+        setError(getUserFacingMessage(e, 'Cập nhật thất bại'));
         return false;
       }
     },
@@ -857,7 +860,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       setDetailMembers([]);
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không thể rời nhóm');
+      setError(getUserFacingMessage(e, 'Không thể rời nhóm'));
       return false;
     }
   }, [selectedConversation, userId, selectConversation, loadConversations]);
@@ -873,7 +876,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       setDetailMembers([]);
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không thể giải tán nhóm');
+      setError(getUserFacingMessage(e, 'Không thể giải tán nhóm'));
       return false;
     }
   }, [selectedConversation, userId, selectConversation, loadConversations]);
@@ -889,7 +892,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         await loadConversations();
         return true;
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Không thêm được thành viên');
+        setError(getUserFacingMessage(e, 'Không thêm được thành viên'));
         return false;
       }
     },
@@ -907,7 +910,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         await loadConversations();
         return true;
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Không xóa được thành viên');
+        setError(getUserFacingMessage(e, 'Không xóa được thành viên'));
         return false;
       }
     },
@@ -924,7 +927,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         const res = await chatService.searchMessages(convId, userId, q, 30);
         return res.success && res.data ? res.data : [];
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Tìm kiếm thất bại');
+        setError(getUserFacingMessage(e, 'Tìm kiếm thất bại'));
         return [];
       }
     },
@@ -1012,7 +1015,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         setDetailAttachmentMessages(accumulated);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Không tải được file đính kèm');
+      setError(getUserFacingMessage(e, 'Không tải được file đính kèm'));
     } finally {
       if (detailFilesAbortRef.current === runId) {
         setIsLoadingDetailFiles(false);
@@ -1073,7 +1076,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         setHasMoreOlder(false);
         setPendingPrivateRecipientId(friendUserId);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Không mở được hội thoại');
+        setError(getUserFacingMessage(e, 'Không mở được hội thoại'));
       }
     },
     [userId, conversations, selectConversation]
